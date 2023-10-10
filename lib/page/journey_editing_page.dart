@@ -12,6 +12,8 @@ import 'package:create_event2/page/journey_viewing_page.dart';
 // import 'package:get/get.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
+import '../services/http.dart';
+
 class JourneyEditingPage extends StatefulWidget {
   final Journey? journey;
   final bool? addTodayDate;
@@ -31,14 +33,13 @@ class JourneyEditingPage extends StatefulWidget {
 class _JourneyEditingPageState extends State<JourneyEditingPage> {
   final _formKey = GlobalKey<FormState>();
 
+  int jID = 0;
+  final titleController = TextEditingController();
   late DateTime fromDate;
   late DateTime toDate;
   late Color backgroundcolor = Colors.black;
-  // 要讀取用戶輸入就需要 "TextEditingController"
-  final titleController = TextEditingController();
   final locationController = TextEditingController();
   final remarkController = TextEditingController();
-
   late int selectedValue;
   bool enableNotification = false;
   bool isAllday = false;
@@ -51,6 +52,8 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
 
     // 新增行程
     if (widget.journey == null) {
+      jID = 0;
+
       if (widget.addTodayDate == false) {
         fromDate = widget.time!;
         toDate = fromDate.add(Duration(hours: 2));
@@ -66,10 +69,10 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
       // 編輯行程
       final journey = widget.journey!;
 
-      titleController.text = journey.title;
-      fromDate = journey.from;
-      toDate = journey.to;
-      backgroundcolor = journey.backgroundColor;
+      titleController.text = journey.journeyName;
+      fromDate = journey.journeyStartTime;
+      toDate = journey.journeyEndTime;
+      backgroundcolor = journey.color;
 
       if (!journey.location.isNotEmpty) {
         locationController.text = '';
@@ -81,8 +84,8 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
       } else {
         remarkController.text = journey.remark;
       }
-      reminderMinutes.value = journey.notification;
-      enableNotification = journey.enableNotification;
+      reminderMinutes.value = journey.remindTime;
+      enableNotification = journey.remindStatus;
       isAllday = journey.isAllDay;
     }
     selectedValue = reminderMinutes.value;
@@ -209,20 +212,19 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
   //輸入完成儲存資料
   Future saveForm() async {
     final isvalid = _formKey.currentState!.validate();
-
+    String uID = 'q';
     if (isvalid) {
       final journey = Journey(
-        title: titleController.text,
-        isAllDay: isAllday,
-        from: fromDate,
-        backgroundColor: backgroundcolor,
-        to: toDate,
-        location: locationController.text,
-        description: 'description',
-        remark: remarkController.text,
-        notification: reminderMinutes.value,
-        enableNotification: enableNotification,
-      );
+          uID: uID,
+          journeyName: titleController.text,
+          location: locationController.text,
+          journeyStartTime: fromDate,
+          journeyEndTime: toDate,
+          color: backgroundcolor,
+          remark: remarkController.text,
+          remindTime: reminderMinutes.value,
+          remindStatus: enableNotification,
+          isAllDay: isAllday);
       final isEditing = widget.journey != null;
       final provider = Provider.of<JourneyProvider>(context, listen: false);
       //編輯行程
@@ -234,9 +236,12 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
                 JourneyViewingPage(journey: journey), //回到行程詳細資料頁面
           ),
         );
+        print('編輯成功');
+        print(journey);
         //新增行程
       } else {
         provider.addJourney(journey);
+        final result = await APIservice.addJourney(content: journey.toMap());
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/MyBottomBar2', //回到主頁面

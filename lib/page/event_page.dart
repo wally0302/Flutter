@@ -74,8 +74,9 @@ class EventPage extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final event = sortedActivities[index];
                   final formattedStartDate =
-                      DateFormat('MMdd').format(event.from);
-                  final formattedEndDate = DateFormat('MMdd').format(event.to);
+                      DateFormat('MMdd').format(event.eventStartTime);
+                  final formattedEndDate =
+                      DateFormat('MMdd').format(event.eventEndTime);
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(

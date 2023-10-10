@@ -1,24 +1,22 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class APIservice {
-  static Future<List> addJourney(
+  // 新增行程
+  static Future<List<dynamic>> addJourney(
       {required Map<String, dynamic> content}) async {
-    String url = "http://163.22.17.145:3000/api/event/add_event"; //api後接檔案名稱
-    final response = await http.post(Uri.parse(url),
-        body: content.toString()); // 根據使用者的token新增資料
-    try {
-      final responseString = jsonDecode(response.body);
-      if (response.statusCode == 200 || response.statusCode == 400) {
-        print('server新增行程成功');
-        return [true, responseString];
-      } else {
-        print(responseString);
-        return [false, responseString];
-      }
-    } catch (e) {
-      print(e.toString());
-      return [false, e.toString()];
+    final url = Uri.parse("http://163.22.17.145:3000/api/journey/");
+
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      return [true, responseString];
+    } else {
+      return [false, response];
     }
   }
 }

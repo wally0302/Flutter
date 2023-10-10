@@ -110,8 +110,8 @@ class _EventEditingPageState extends State<EventEditingPage> {
       final event = widget.event!;
 
       titleController.text = event.title;
-      fromDate = event.from;
-      toDate = event.to;
+      fromDate = event.eventStartTime;
+      toDate = event.eventEndTime;
       backgroundcolor = Colors.red;
       deadline = event.deadline;
       BeginDate = event.BeginDate;
@@ -261,8 +261,8 @@ class _EventEditingPageState extends State<EventEditingPage> {
     if (isvalid) {
       final event = Event(
         title: titleController.text,
-        from: fromDate, //匹配起始日
-        to: toDate,
+        eventStartTime: fromDate, //匹配起始日
+        eventEndTime: toDate,
         backgroundColor: backgroundcolor,
         location: locationController.text,
         description: 'description',

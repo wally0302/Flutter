@@ -51,15 +51,15 @@ class EventProvider extends ChangeNotifier {
   void addSortedEvent(Event event) {
     _events.add(event);
     _events.sort((a, b) {
-      int startComparison = a.from.compareTo(b.from);
+      int startComparison = a.eventStartTime.compareTo(b.eventStartTime);
       if (startComparison != 0) {
         return startComparison;
       } else {
-        int startTimeComparison = a.from.compareTo(b.from);
+        int startTimeComparison = a.eventStartTime.compareTo(b.eventStartTime);
         if (startTimeComparison != 0) {
           return startTimeComparison;
         } else {
-          int endComparison = a.to.compareTo(b.to);
+          int endComparison = a.eventEndTime.compareTo(b.eventEndTime);
           return endComparison;
         }
       }
@@ -69,15 +69,15 @@ class EventProvider extends ChangeNotifier {
 
   void sortEventList() {
     _events.sort((a, b) {
-      int startComparison = a.from.compareTo(b.from);
+      int startComparison = a.eventStartTime.compareTo(b.eventStartTime);
       if (startComparison != 0) {
         return startComparison;
       } else {
-        int startTimeComparison = a.from.compareTo(b.from);
+        int startTimeComparison = a.eventStartTime.compareTo(b.eventStartTime);
         if (startTimeComparison != 0) {
           return startTimeComparison;
         } else {
-          int endComparison = a.to.compareTo(b.to);
+          int endComparison = a.eventEndTime.compareTo(b.eventEndTime);
           return endComparison;
         }
       }

@@ -41,7 +41,7 @@ class JourneyProvider extends ChangeNotifier {
   List<Journey> searchJourneys(String keyword) {
     return _journeys
         .where((journey) =>
-            journey.title.toLowerCase().contains(keyword.toLowerCase()))
+            journey.journeyName.toLowerCase().contains(keyword.toLowerCase()))
         .toList();
   }
 

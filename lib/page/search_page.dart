@@ -164,7 +164,7 @@ class _SearchPageState extends State<SearchPage> {
   ListTile buildJourneyTile(Journey journey) {
     return ListTile(
       title: Text(
-        journey.title,
+        journey.journeyName,
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Column(
@@ -172,11 +172,11 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(journey.from)}',
+            '起始時間：${Utils.toDateTime(journey.journeyStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(
-            '結束時間：${Utils.toDateTime(journey.to)}',
+            '結束時間：${Utils.toDateTime(journey.journeyEndTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
@@ -209,11 +209,11 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(event.from)}',
+            '起始時間：${Utils.toDateTime(event.eventStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(
-            '結束時間：${Utils.toDateTime(event.to)}',
+            '結束時間：${Utils.toDateTime(event.eventEndTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],

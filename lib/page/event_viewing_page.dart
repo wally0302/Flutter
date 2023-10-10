@@ -214,8 +214,8 @@ class EventViewingPage extends StatelessWidget {
   Widget buildConfirmationTime(Event event) {
     return Column(
       children: [
-        buildConfirmationDate('起始時間：', event.from), // 要替換為後端的媒合時間
-        buildConfirmationDate('結束時間：', event.to),
+        buildConfirmationDate('起始時間：', event.eventStartTime), // 要替換為後端的媒合時間
+        buildConfirmationDate('結束時間：', event.eventEndTime),
       ],
     );
   }
@@ -244,8 +244,8 @@ class EventViewingPage extends StatelessWidget {
     return Column(
       children: [
         //整天 or 非整天
-        buildDate('匹配起始日：', event.from),
-        buildDate('匹配結束日：', event.to),
+        buildDate('匹配起始日：', event.eventStartTime),
+        buildDate('匹配結束日：', event.eventEndTime),
       ],
     );
   }
@@ -401,7 +401,7 @@ class EventViewingPage extends StatelessWidget {
               builder: (context) => EventEditingPage(
                 event: event,
                 addTodayDate: true,
-                time: event.from,
+                time: event.eventStartTime,
               ),
             ),
           );

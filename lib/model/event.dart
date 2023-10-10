@@ -6,8 +6,8 @@ import '../model/friend.dart';
 class Event {
   final String title;
   final String description;
-  final DateTime from;
-  final DateTime to;
+  final DateTime eventStartTime;
+  final DateTime eventEndTime;
   final Color backgroundColor;
   final String location;
   final String remark;
@@ -24,8 +24,8 @@ class Event {
   const Event({
     required this.title,
     required this.description,
-    required this.from,
-    required this.to,
+    required this.eventStartTime,
+    required this.eventEndTime,
     required this.invitedFriends,
     required this.deadline,
     required this.BeginDate,

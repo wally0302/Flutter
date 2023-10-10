@@ -81,8 +81,8 @@ class _TaskWidgetState extends State<TaskWidget> {
             '全天',
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
-        if (!journey.isAllDay) buildDate('起始時間：', journey.from),
-        if (!journey.isAllDay) buildDate('結束時間：', journey.to),
+        if (!journey.isAllDay) buildDate('起始時間：', journey.journeyStartTime),
+        if (!journey.isAllDay) buildDate('結束時間：', journey.journeyEndTime),
       ],
     );
   }
@@ -111,7 +111,7 @@ class _TaskWidgetState extends State<TaskWidget> {
       width: details.bounds.width,
       height: details.bounds.height,
       decoration: BoxDecoration(
-        color: journey.backgroundColor,
+        color: journey.color,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -119,7 +119,7 @@ class _TaskWidgetState extends State<TaskWidget> {
         children: <Widget>[
           Center(
             child: Text(
-              journey.title,
+              journey.journeyName,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

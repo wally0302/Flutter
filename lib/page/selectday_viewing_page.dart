@@ -44,8 +44,8 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
 
     //判斷是否為今天，是的話就加入 list
     selectedDayItems.addAll(allJourneys.where((journey) {
-      final startDateTime = journey.from;
-      final endDateTime = journey.to;
+      final startDateTime = journey.journeyStartTime;
+      final endDateTime = journey.journeyEndTime;
       final startDate = DateTime(
         startDateTime.year,
         startDateTime.month,
@@ -62,8 +62,8 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
     }));
 
     selectedDayItems.addAll(allActivities.where((event) {
-      final startDateTime = event.from;
-      final endDateTime = event.to;
+      final startDateTime = event.eventStartTime;
+      final endDateTime = event.eventEndTime;
       final startDate = DateTime(
         startDateTime.year,
         startDateTime.month,
@@ -79,7 +79,21 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
           selectedDate.isBefore(endDate.add(Duration(days: 1)));
     }));
 
-    selectedDayItems.sort((a, b) => a.from.compareTo(b.from));
+    selectedDayItems.sort((a, b) {
+      final DateTime startTimeA = a is Journey
+          ? a.journeyStartTime
+          : a is Event
+              ? a.eventStartTime
+              : DateTime.now(); // 默认值，但在你的应用中，你可能永远不会遇到这种情况
+
+      final DateTime startTimeB = b is Journey
+          ? b.journeyStartTime
+          : b is Event
+              ? b.eventStartTime
+              : DateTime.now(); // 默认值
+
+      return startTimeA.compareTo(startTimeB);
+    });
   }
 
   @override
@@ -159,7 +173,7 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
   Widget buildJourneyTile(Journey journey) {
     return ListTile(
       title: Text(
-        journey.title,
+        journey.journeyName,
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Column(
@@ -167,11 +181,11 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(journey.from)}',
+            '起始時間：${Utils.toDateTime(journey.journeyStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(
-            '結束時間：${Utils.toDateTime(journey.to)}',
+            '結束時間：${Utils.toDateTime(journey.journeyEndTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
@@ -197,7 +211,7 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(event.from)}',
+            '起始時間：${Utils.toDateTime(event.eventStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(

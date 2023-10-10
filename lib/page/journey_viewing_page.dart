@@ -36,7 +36,7 @@ class JourneyViewingPage extends StatelessWidget {
         padding: EdgeInsets.all(32),
         children: <Widget>[
           Text(
-            journey.title,
+            journey.journeyName,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 30,
@@ -58,7 +58,7 @@ class JourneyViewingPage extends StatelessWidget {
           const SizedBox(
             height: 24,
           ),
-          buildNotification(journey, journey.notification) //提醒
+          buildNotification(journey, journey.remindTime) //提醒
         ],
       ),
     );
@@ -69,8 +69,10 @@ class JourneyViewingPage extends StatelessWidget {
     return Column(
       children: [
         //整天 or 非整天
-        buildDate(journey.isAllDay ? '全天起始日期：' : '起始時間：', journey.from),
-        buildDate(journey.isAllDay ? '全天結束日期：' : '結束時間：', journey.to),
+        buildDate(
+            journey.isAllDay ? '全天起始日期：' : '起始時間：', journey.journeyStartTime),
+        buildDate(
+            journey.isAllDay ? '全天結束日期：' : '結束時間：', journey.journeyEndTime),
       ],
     );
   }
@@ -134,7 +136,7 @@ class JourneyViewingPage extends StatelessWidget {
   }
 
   Widget buildNotification(Journey journey, int notification) {
-    if (journey.enableNotification) {
+    if (journey.remindStatus) {
       return Row(
         children: [
           Icon(Icons.alarm),
@@ -180,7 +182,7 @@ class JourneyViewingPage extends StatelessWidget {
               builder: (context) => JourneyEditingPage(
                 journey: journey,
                 addTodayDate: true,
-                time: journey.from,
+                time: journey.journeyStartTime,
               ),
             ),
           );
@@ -220,57 +222,4 @@ class JourneyViewingPage extends StatelessWidget {
       ),
     ];
   }
-
-  // List<Widget> buildViewingActions(BuildContext context, Journey journey) => [
-  //       //編輯按鈕
-  //       IconButton(
-  //           icon: Icon(Icons.edit),
-  //           onPressed: () {
-  //             //pushReplacement 方法中，會將當前頁面替換成新的頁面，而不是在當前頁面上疊加新的頁面。
-  //             //它會回到 "主畫面"
-  //             Navigator.of(context).pushReplacement(
-  //               MaterialPageRoute(
-  //                 // 將使用者導向到 JourneyEditingPage 頁面，並將當前的 journey 物件傳遞給該頁面
-  //                 builder: (context) => JourneyEditingPage(
-  //                   journey: journey,
-  //                   addTodayDate: true,
-  //                   time: journey.from,
-  //                 ),
-  //               ),
-  //             );
-  //           }),
-  //       //刪除按鈕
-  //       IconButton(
-  //         icon: Icon(Icons.delete),
-  //         onPressed: () {
-  //           Get.defaultDialog(
-  //             title: "提示",
-  //             titleStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-  //             middleText: "是否刪除此行程?",
-  //             middleTextStyle: TextStyle(fontSize: 18),
-  //             backgroundColor: Colors.pinkAccent,
-  //             radius: 30,
-  //             textCancel: "取消",
-  //             cancelTextColor: Colors.white,
-  //             textConfirm: "確認",
-  //             confirmTextColor: Colors.white,
-  //             buttonColor: Colors.blueGrey,
-  //             onCancel: () {
-  //               Navigator.of(context).pop(); //關閉對話框，返回上一頁
-  //             },
-  //             onConfirm: () {
-  //               final provider =
-  //                   Provider.of<JourneyProvider>(context, listen: false);
-  //               provider.deleteJourney(journey);
-  //               //回到主畫面
-  //               Navigator.pushNamedAndRemoveUntil(
-  //                 context,
-  //                 '/MyBottomBar2',
-  //                 ModalRoute.withName('/'),
-  //               );
-  //             },
-  //           );
-  //         },
-  //       ),
-  //     ];
 }

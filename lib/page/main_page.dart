@@ -38,16 +38,16 @@ class _MainPageState extends State<MainPage> {
     final List<Appointment> appointments = [];
     for (final journey in journeys) {
       appointments.add(Appointment(
-        startTime: journey.from,
-        endTime: journey.to,
-        subject: journey.title,
-        color: journey.backgroundColor,
+        startTime: journey.journeyStartTime,
+        endTime: journey.journeyEndTime,
+        subject: journey.journeyName,
+        color: journey.color,
       ));
     }
     for (final event in events) {
       appointments.add(Appointment(
-        startTime: event.from,
-        endTime: event.to,
+        startTime: event.eventStartTime,
+        endTime: event.eventEndTime,
         subject: event.title,
         color: event.backgroundColor,
       ));

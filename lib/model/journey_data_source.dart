@@ -10,21 +10,21 @@ class JourneyDateSource extends CalendarDataSource {
 
   @override
   DateTime getStartTime(int index) {
-    return appointments![index].from;
+    return appointments![index].journeyStartTime;
   }
 
   @override
   DateTime getEndTime(int index) {
-    return appointments![index].to;
+    return appointments![index].journeyEndTime;
   }
 
   @override
   String getSubject(int index) {
-    return appointments![index].title;
+    return appointments![index].journeyName;
   }
 
   @override
-  Color getColor(int index) => getJourney(index).backgroundColor;
+  Color getColor(int index) => getJourney(index).color;
 
   @override
   bool isAllDay(int index) => getJourney(index).isAllDay;
