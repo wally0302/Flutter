@@ -55,7 +55,7 @@ class EventViewingPage extends StatelessWidget {
             padding: EdgeInsets.all(32),
             children: <Widget>[
               Text(
-                event.title,
+                event.eventName,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 30,
@@ -77,7 +77,7 @@ class EventViewingPage extends StatelessWidget {
               const SizedBox(
                 height: 24,
               ),
-              buildInvitedFriendsList(event.invitedFriends), //参加的好友
+              buildInvitedFriendsList(event.friends), //参加的好友
               const SizedBox(
                 height: 24,
               ),
@@ -87,7 +87,7 @@ class EventViewingPage extends StatelessWidget {
               const SizedBox(
                 height: 24,
               ),
-              buildNotification(event, event.notification) //提醒
+              buildNotification(event, event.remindStatus) //提醒
             ],
           ),
         ],
@@ -121,7 +121,7 @@ class EventViewingPage extends StatelessWidget {
             padding: EdgeInsets.all(32),
             children: <Widget>[
               Text(
-                event.title,
+                event.eventName,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 30,
@@ -151,15 +151,15 @@ class EventViewingPage extends StatelessWidget {
               const SizedBox(
                 height: 24,
               ),
-              buildInvitedFriendsList(event.invitedFriends), //邀请好友
+              buildInvitedFriendsList(event.friends), //邀请好友
               const SizedBox(
                 height: 24,
               ),
-              buildDeadline(event.deadline), // 截止时间
+              buildDeadline(event.matchTime), //媒合開始時間
               const SizedBox(
                 height: 24,
               ),
-              buildNotification(event, event.notification) //提醒
+              buildNotification(event, event.remindStatus) //提醒
             ],
           ),
         ],
@@ -214,8 +214,9 @@ class EventViewingPage extends StatelessWidget {
   Widget buildConfirmationTime(Event event) {
     return Column(
       children: [
-        buildConfirmationDate('起始時間：', event.eventStartTime), // 要替換為後端的媒合時間
-        buildConfirmationDate('結束時間：', event.eventEndTime),
+        buildConfirmationDate(
+            '起始時間：', event.eventBlockStartTime), // 要替換為後端的媒合時間
+        buildConfirmationDate('結束時間：', event.eventBlockEndTime),
       ],
     );
   }
@@ -244,8 +245,8 @@ class EventViewingPage extends StatelessWidget {
     return Column(
       children: [
         //整天 or 非整天
-        buildDate('匹配起始日：', event.eventStartTime),
-        buildDate('匹配結束日：', event.eventEndTime),
+        buildDate('匹配起始日：', event.eventBlockStartTime),
+        buildDate('匹配結束日：', event.eventBlockEndTime),
       ],
     );
   }
@@ -272,7 +273,7 @@ class EventViewingPage extends StatelessWidget {
 //活動預計開始時間
   Widget buildBeginDate(Event event) {
     final timeFormatter = DateFormat('HH:mm');
-    final timeString = timeFormatter.format(event.BeginDate);
+    final timeString = timeFormatter.format(event.eventTime);
 
     return Row(
       children: <Widget>[
@@ -291,8 +292,8 @@ class EventViewingPage extends StatelessWidget {
   }
 
   Widget buildDurationLength(Event event) {
-    final startHour = event.selectedHour;
-    final startMinute = event.selectedMinute;
+    final startHour = event.timeLengtHours;
+    final startMinute = event.timeLengthMins;
 
     return Row(
       children: <Widget>[
@@ -347,7 +348,7 @@ class EventViewingPage extends StatelessWidget {
   }
 
   Widget buildNotification(Event event, int notification) {
-    if (event.enableNotification) {
+    if (event.remindStatus == 1) {
       return Row(
         children: [
           Icon(Icons.alarm),
@@ -401,7 +402,7 @@ class EventViewingPage extends StatelessWidget {
               builder: (context) => EventEditingPage(
                 event: event,
                 addTodayDate: true,
-                time: event.eventStartTime,
+                time: event.eventBlockStartTime,
               ),
             ),
           );
@@ -413,7 +414,7 @@ class EventViewingPage extends StatelessWidget {
           showDialog(
             context: context,
             builder: (BuildContext context) => AlertDialog(
-              title: Text('確認刪除'),
+              icon: Text('確認刪除'),
               content: Text('確定要刪除這個活動嗎？'),
               actions: [
                 TextButton(

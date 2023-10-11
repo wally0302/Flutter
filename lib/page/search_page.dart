@@ -201,7 +201,7 @@ class _SearchPageState extends State<SearchPage> {
   ListTile buildEventTile(Event event) {
     return ListTile(
       title: Text(
-        event.title,
+        event.eventName,
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Column(
@@ -209,11 +209,11 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(event.eventStartTime)}',
+            '起始時間：${Utils.toDateTime(event.eventBlockStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(
-            '結束時間：${Utils.toDateTime(event.eventEndTime)}',
+            '結束時間：${Utils.toDateTime(event.eventBlockEndTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],

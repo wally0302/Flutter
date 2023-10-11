@@ -215,19 +215,22 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
     String uID = 'q';
     if (isvalid) {
       final journey = Journey(
-          uID: uID,
-          journeyName: titleController.text,
-          location: locationController.text,
-          journeyStartTime: fromDate,
-          journeyEndTime: toDate,
-          color: backgroundcolor,
-          remark: remarkController.text,
-          remindTime: reminderMinutes.value,
-          remindStatus: enableNotification,
-          isAllDay: isAllday);
+        uID: uID,
+        journeyName: titleController.text,
+        journeyStartTime: fromDate,
+        journeyEndTime: toDate,
+        isAllDay: isAllday,
+        location: locationController.text,
+        remindStatus: enableNotification,
+        remindTime: reminderMinutes.value,
+        remark: remarkController.text,
+        color: backgroundcolor,
+      );
       final isEditing = widget.journey != null;
       final provider = Provider.of<JourneyProvider>(context, listen: false);
+
       //編輯行程
+
       if (isEditing) {
         provider.editJourney(journey, widget.journey!);
         Navigator.of(context).pushReplacement(
@@ -238,10 +241,15 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
         );
         print('編輯成功');
         print(journey);
+
         //新增行程
       } else {
         provider.addJourney(journey);
-        final result = await APIservice.addJourney(content: journey.toMap());
+        final result =
+            await APIservice.addJourney(content: journey.toMap()); //新增行程到資料庫
+        print("新增行程到資料庫");
+        print(journey.journeyStartTime);
+        print(result[1]);
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/MyBottomBar2', //回到主頁面

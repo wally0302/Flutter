@@ -15,6 +15,7 @@ import 'package:create_event2/page/event_viewing_page.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../model/friend.dart';
+import '../services/http.dart';
 
 class EventEditingPage extends StatefulWidget {
   final Event? event;
@@ -35,32 +36,27 @@ class EventEditingPage extends StatefulWidget {
 class _EventEditingPageState extends State<EventEditingPage> {
   final _formKey = GlobalKey<FormState>();
 
+  final titleController = TextEditingController(); //標題
   late DateTime fromDate; //匹配起始日
   late DateTime toDate; //匹配結束日
-  late Color backgroundcolor = Colors.red;
-  // 要讀取用戶輸入就需要 "TextEditingController"
-  final titleController = TextEditingController();
-  final locationController = TextEditingController();
-  final remarkController = TextEditingController();
+  late DateTime eventTime; // 活動預計開始時間
+  //活動預計時間長度
+  late int selectedHours = 1; // 初始小時數為 1 小時
+  late int selectedDuration = 0; // 初始時間長度為 60 分鐘
+  final locationController = TextEditingController(); //地點
+  final remarkController = TextEditingController(); //備註
+  List<Friend> invitedFriends = []; // 邀請的好友
+  late DateTime matchTime; // 媒合開始時間
+  int enableNotification = 0; //提醒是否開啟
+  //--------------------------------------------------------//
 
   late int selectedValue;
-  bool enableNotification = false;
-  bool inviteMembers = false;
-  late DateTime BeginDate; // 活動預計開始時間
-
-  late DateTime deadline; // 截止日期
-
   List<Friend> backendFriends = [
+    // 好友列表 (後端)
     Friend("Jack", false),
     Friend("Wiily", false),
     Friend("Julie", false),
-    // Friend("好友二", false),
-    // Friend("好友三", false),
   ];
-  List<Friend> invitedFriends = [];
-
-  late int selectedHours = 1; // 初始小時數為 1 小時
-  late int selectedDuration = 0; // 初始時間長度為 60 分鐘
 
   void showFriendListDialog() {
     showDialog(
@@ -102,22 +98,20 @@ class _EventEditingPageState extends State<EventEditingPage> {
     if (widget.event == null) {
       fromDate = widget.time!;
       toDate = widget.time!;
-      BeginDate = DateTime.now();
-      backgroundcolor = Colors.red; //選擇顏色的地方
-      deadline = DateTime.now();
+      eventTime = DateTime.now(); //活動預計開始時間
+      matchTime = DateTime.now(); // 媒合開始時間
       // 編輯活動
     } else {
       final event = widget.event!;
+      titleController.text = event.eventName;
+      fromDate = event.eventBlockStartTime;
+      toDate = event.eventBlockEndTime;
+      matchTime = event.matchTime;
+      eventTime = event.eventTime; //活動預計開始時間
+      invitedFriends = event.friends as List<Friend>;
+      selectedHours = event.timeLengtHours;
+      selectedDuration = event.timeLengthMins;
 
-      titleController.text = event.title;
-      fromDate = event.eventStartTime;
-      toDate = event.eventEndTime;
-      backgroundcolor = Colors.red;
-      deadline = event.deadline;
-      BeginDate = event.BeginDate;
-      invitedFriends = event.invitedFriends;
-      selectedHours = event.selectedHour;
-      selectedDuration = event.selectedMinute;
       if (!event.location.isNotEmpty) {
         locationController.text = '';
       } else {
@@ -128,10 +122,8 @@ class _EventEditingPageState extends State<EventEditingPage> {
       } else {
         remarkController.text = event.remark;
       }
-      reminderMinutes.value = event.notification;
-      enableNotification = event.enableNotification;
+      enableNotification = event.remindStatus;
     }
-    selectedValue = reminderMinutes.value;
   }
 
   @override
@@ -190,7 +182,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
                   buildInvitedMembersField(),
                   buildDeadlinePicker(),
                   showEnableNotification(), //提醒
-                  if (enableNotification)
+                  if (enableNotification == 1)
                     buildNotificationField(
                         text: '提醒時間 ：', onClicked: showReminderDialog),
                 ],
@@ -257,23 +249,25 @@ class _EventEditingPageState extends State<EventEditingPage> {
   //輸入完成儲存資料
   Future saveForm() async {
     final isvalid = _formKey.currentState!.validate();
-
+    String uID = 'q';
     if (isvalid) {
       final event = Event(
-        title: titleController.text,
-        eventStartTime: fromDate, //匹配起始日
-        eventEndTime: toDate,
-        backgroundColor: backgroundcolor,
+        uID: uID,
+        eventName: titleController.text,
+        eventBlockStartTime: fromDate, //匹配起始日
+        eventBlockEndTime: toDate,
+        eventTime: eventTime, //活動預計開始時間
+        timeLengtHours: selectedHours, //活動預計時間長度
+        timeLengthMins: selectedDuration,
+        eventFinalStartTime: DateTime.now(),
+        eventFinalEndTime: DateTime.now(),
+        state: 0,
+        matchTime: matchTime,
+        friends: invitedFriends,
         location: locationController.text,
-        description: 'description',
+        remindStatus: enableNotification,
+        remindTime: DateTime.now(),
         remark: remarkController.text,
-        notification: reminderMinutes.value,
-        enableNotification: enableNotification,
-        invitedFriends: invitedFriends,
-        deadline: deadline,
-        BeginDate: BeginDate, //活動預計開始時間
-        selectedHour: selectedHours, //活動預計時間長度
-        selectedMinute: selectedDuration,
       );
       final isEditing = widget.event != null;
       final provider = Provider.of<EventProvider>(context, listen: false);
@@ -281,7 +275,11 @@ class _EventEditingPageState extends State<EventEditingPage> {
       if (isEditing) {
         provider.editEvent(event, widget.event!);
       } else {
-        provider.addSortedEvent(event); // 使用 addSortedEvent
+        provider.addSortedEvent(event);
+        final result =
+            await APIservice.addEvent(content: event.toMap()); //新增活動到資料庫
+        // print("新增活動到資料庫");
+        // print(result[1]);
       }
       Navigator.pop(context); // 返回上一頁
     }
@@ -371,7 +369,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
         children: [
           Expanded(
             child: buildDropdownField(
-              text: Utils.toTime(BeginDate),
+              text: Utils.toTime(eventTime),
               onClicked: () => pickBeginDate(pickDate: false),
             ),
           )
@@ -620,8 +618,9 @@ class _EventEditingPageState extends State<EventEditingPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         trailing: Switch(
-          value: enableNotification,
-          onChanged: (value) => setState(() => enableNotification = value),
+          value: enableNotification == 1 ? true : false,
+          onChanged: (value) =>
+              setState(() => enableNotification = value ? 1 : 0),
         ),
       );
 
@@ -858,13 +857,13 @@ class _EventEditingPageState extends State<EventEditingPage> {
           Expanded(
             flex: 2,
             child: buildDropdownField(
-              text: Utils.toDate(deadline),
+              text: Utils.toDate(matchTime),
               onClicked: () => pickDeadline(pickDate: true),
             ),
           ),
           Expanded(
             child: buildDropdownField(
-              text: Utils.toTime(deadline),
+              text: Utils.toTime(matchTime),
               onClicked: () => pickDeadline(pickDate: false),
             ),
           )
@@ -875,23 +874,23 @@ class _EventEditingPageState extends State<EventEditingPage> {
 
 // 選擇截止時間
   Future pickDeadline({required bool pickDate}) async {
-    final date = await pickDateTime(deadline, pickDate: pickDate);
+    final date = await pickDateTime(matchTime, pickDate: pickDate);
 
     if (date == null) return;
 
     setState(() {
-      deadline = date;
+      matchTime = date;
     });
   }
 
   // 選擇截止時間
   Future pickBeginDate({required bool pickDate}) async {
-    final date = await pickDateTime(BeginDate, pickDate: pickDate);
+    final date = await pickDateTime(eventTime, pickDate: pickDate);
 
     if (date == null) return;
 
     setState(() {
-      BeginDate = date;
+      eventTime = date;
     });
   }
 }

@@ -6,12 +6,12 @@ class Journey {
   final String journeyName;
   final DateTime journeyStartTime;
   final DateTime journeyEndTime;
-  final Color color;
-  final String location;
-  final String remark; //備註
-  final int remindTime; //提醒時間
-  final bool remindStatus;
   final bool isAllDay; //整天
+  final String location;
+  final bool remindStatus;
+  final int remindTime; //提醒時間
+  final String remark; //備註
+  final Color color;
 
   const Journey({
     this.jID,
@@ -19,12 +19,12 @@ class Journey {
     required this.journeyName,
     required this.journeyStartTime,
     required this.journeyEndTime,
-    this.color = Colors.black,
+    this.isAllDay = false,
     this.location = '',
+    this.remindStatus = false,
+    this.color = Colors.black,
     this.remark = '',
     this.remindTime = 0,
-    this.remindStatus = false,
-    this.isAllDay = false,
   });
 
   get start => null;
@@ -62,6 +62,8 @@ class Journey {
     );
   }
   // journeyStartTime.year * 100000000 +journeyStartTime.month * 1000000 +journeyStartTime.day * 10000 +journeyStartTime.hour * 100 +journeyStartTime.minute
+
+  //存入資料庫的格式
   Map<String, dynamic> toMap() {
     return {
       'journeyName': journeyName,

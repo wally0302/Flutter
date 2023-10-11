@@ -62,8 +62,8 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
     }));
 
     selectedDayItems.addAll(allActivities.where((event) {
-      final startDateTime = event.eventStartTime;
-      final endDateTime = event.eventEndTime;
+      final startDateTime = event.eventBlockStartTime;
+      final endDateTime = event.eventBlockEndTime;
       final startDate = DateTime(
         startDateTime.year,
         startDateTime.month,
@@ -83,13 +83,13 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
       final DateTime startTimeA = a is Journey
           ? a.journeyStartTime
           : a is Event
-              ? a.eventStartTime
+              ? a.eventBlockStartTime
               : DateTime.now(); // 默认值，但在你的应用中，你可能永远不会遇到这种情况
 
       final DateTime startTimeB = b is Journey
           ? b.journeyStartTime
           : b is Event
-              ? b.eventStartTime
+              ? b.eventBlockStartTime
               : DateTime.now(); // 默认值
 
       return startTimeA.compareTo(startTimeB);
@@ -203,7 +203,7 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
   Widget buildEventTile(Event event) {
     return ListTile(
       title: Text(
-        event.title,
+        event.eventName,
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Column(
@@ -211,11 +211,11 @@ class _SelectedDayViewingPageState extends State<SelectedDayViewingPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(event.eventStartTime)}',
+            '起始時間：${Utils.toDateTime(event.eventBlockStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(
-            '截止時間：${Utils.toDateTime(event.deadline)}',
+            '截止時間：${Utils.toDateTime(event.matchTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],

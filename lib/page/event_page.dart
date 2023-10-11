@@ -74,9 +74,9 @@ class EventPage extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final event = sortedActivities[index];
                   final formattedStartDate =
-                      DateFormat('MMdd').format(event.eventStartTime);
+                      DateFormat('MMdd').format(event.eventBlockStartTime);
                   final formattedEndDate =
-                      DateFormat('MMdd').format(event.eventEndTime);
+                      DateFormat('MMdd').format(event.eventBlockEndTime);
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(
@@ -91,7 +91,7 @@ class EventPage extends StatelessWidget {
                       ),
                       child: ListTile(
                         title: Text(
-                          '$formattedStartDate ~ $formattedEndDate ${event.title}',
+                          '$formattedStartDate ~ $formattedEndDate ${event.eventName}',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),

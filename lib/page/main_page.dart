@@ -46,10 +46,9 @@ class _MainPageState extends State<MainPage> {
     }
     for (final event in events) {
       appointments.add(Appointment(
-        startTime: event.eventStartTime,
-        endTime: event.eventEndTime,
-        subject: event.title,
-        color: event.backgroundColor,
+        startTime: event.eventBlockStartTime,
+        endTime: event.eventBlockEndTime,
+        subject: event.eventName,
       ));
     }
     return MaterialApp(

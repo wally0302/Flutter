@@ -22,7 +22,4 @@ class EventDateSource extends CalendarDataSource {
   String getSubject(int index) {
     return appointments![index].title;
   }
-
-  @override
-  Color getColor(int index) => getEvent(index).backgroundColor;
 }

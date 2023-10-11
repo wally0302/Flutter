@@ -34,7 +34,7 @@ class EventProvider extends ChangeNotifier {
   List<Event> searchEvent(String keyword) {
     return _events
         .where((event) =>
-            event.title.toLowerCase().contains(keyword.toLowerCase()))
+            event.eventName.toLowerCase().contains(keyword.toLowerCase()))
         .toList();
   }
 
@@ -51,15 +51,18 @@ class EventProvider extends ChangeNotifier {
   void addSortedEvent(Event event) {
     _events.add(event);
     _events.sort((a, b) {
-      int startComparison = a.eventStartTime.compareTo(b.eventStartTime);
+      int startComparison =
+          a.eventBlockStartTime.compareTo(b.eventBlockStartTime);
       if (startComparison != 0) {
         return startComparison;
       } else {
-        int startTimeComparison = a.eventStartTime.compareTo(b.eventStartTime);
+        int startTimeComparison =
+            a.eventBlockStartTime.compareTo(b.eventBlockStartTime);
         if (startTimeComparison != 0) {
           return startTimeComparison;
         } else {
-          int endComparison = a.eventEndTime.compareTo(b.eventEndTime);
+          int endComparison =
+              a.eventBlockEndTime.compareTo(b.eventBlockEndTime);
           return endComparison;
         }
       }
@@ -69,15 +72,18 @@ class EventProvider extends ChangeNotifier {
 
   void sortEventList() {
     _events.sort((a, b) {
-      int startComparison = a.eventStartTime.compareTo(b.eventStartTime);
+      int startComparison =
+          a.eventBlockStartTime.compareTo(b.eventBlockStartTime);
       if (startComparison != 0) {
         return startComparison;
       } else {
-        int startTimeComparison = a.eventStartTime.compareTo(b.eventStartTime);
+        int startTimeComparison =
+            a.eventBlockStartTime.compareTo(b.eventBlockStartTime);
         if (startTimeComparison != 0) {
           return startTimeComparison;
         } else {
-          int endComparison = a.eventEndTime.compareTo(b.eventEndTime);
+          int endComparison =
+              a.eventBlockEndTime.compareTo(b.eventBlockEndTime);
           return endComparison;
         }
       }
