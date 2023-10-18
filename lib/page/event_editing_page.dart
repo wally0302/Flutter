@@ -252,6 +252,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
     String uID = 'q';
     if (isvalid) {
       final event = Event(
+        // eid:eID,
         uID: uID,
         eventName: titleController.text,
         eventBlockStartTime: fromDate, //匹配起始日
