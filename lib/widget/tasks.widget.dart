@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:create_event2/page/journey_viewing_page.dart';
+import 'package:create_event2/page/journey/journey_viewing_page.dart';
 import 'package:intl/intl.dart';
 
 class TaskWidget extends StatefulWidget {

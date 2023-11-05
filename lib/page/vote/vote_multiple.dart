@@ -1,6 +1,6 @@
-import 'package:create_event2/page/vote_result.dart';
+import 'package:create_event2/page/vote/vote_result.dart';
 import 'package:flutter/material.dart';
-import '../model/vote.dart'; // 别忘了导入你的 Vote 类
+import '../../model/vote.dart'; // 别忘了导入你的 Vote 类
 
 class VoteCheckbox extends StatefulWidget {
   final Vote vote;

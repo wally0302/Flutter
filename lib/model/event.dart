@@ -6,21 +6,23 @@ import '../model/friend.dart';
 class Event {
   final int? eID;
   final String? uID;
-  final String eventName;
-  final DateTime eventBlockStartTime;
-  final DateTime eventBlockEndTime;
+  final String eventName; //名稱
+  final DateTime eventBlockStartTime; //匹配起始日
+  final DateTime eventBlockEndTime; //匹配結束日
   final DateTime eventTime; //活動預計開始時間
-  final int timeLengtHours;
+  final int timeLengtHours; //活動預計長度
   final int timeLengthMins;
+  final String location; //地點
+  final String remark; //備註
+  final List<Friend> friends; //參加好友
+  final DateTime matchTime; //媒合開始時間
+  final bool remindStatus; //提醒是否開 1:開啟 0:關閉
+  final DateTime remindTime; //提醒時間
+  //-------------------------------------------
+  //後端會回傳給前端的資料
+  final int state; //1:已完成媒合 0:未完成媒合
   final DateTime eventFinalStartTime; //最終確定時間 年月日時分
   final DateTime eventFinalEndTime;
-  final int state; //1:已完成媒合 0:未完成媒合
-  final DateTime matchTime; //媒合開始時間
-  final List<Friend> friends;
-  final String location;
-  final int remindStatus; //提醒是否開 1:開啟 0:關閉
-  final DateTime remindTime;
-  final String remark; //備註
 
   const Event({
     this.eID,
@@ -36,7 +38,7 @@ class Event {
     this.state = 0,
     required this.matchTime,
     this.location = '',
-    this.remindStatus = 0,
+    this.remindStatus = false,
     required this.remindTime,
     this.remark = '',
     required this.friends,
@@ -52,7 +54,7 @@ class Event {
       'eventName': eventName,
       'eventBlockStartTime': eventBlockStartTime.millisecondsSinceEpoch,
       'eventBlockEndTime': eventBlockEndTime.millisecondsSinceEpoch,
-      'eventTime': eventTime.millisecondsSinceEpoch,
+      'eventTime': eventTime,
       'timeLengtHours': timeLengtHours,
       'timeLengthMins': timeLengthMins,
       'eventFinalStartTime': eventFinalStartTime.millisecondsSinceEpoch,
@@ -67,5 +69,31 @@ class Event {
       //     .map((friend) => friend.toMap())
       //     .toList(), // 假定 Friend 類別也有 toMap() 方法
     };
+  }
+
+  factory Event.fromMap(Map<String, dynamic> map) {
+    print('-----map-----');
+    print(map['uID']);
+    return Event(
+      eID: int.parse(map['eID'].toString()),
+      uID: map['uID'].toString(),
+      eventName: map['eventName'],
+      eventBlockStartTime:
+          DateTime.parse(map['eventBlockStartTime'].toString()),
+      eventBlockEndTime: DateTime.parse(map['eventBlockEndTime'].toString()),
+      eventTime: DateTime.parse(map['eventTime'].toString()),
+      timeLengtHours: int.parse(map['timeLengthHours'].toString()),
+      timeLengthMins: int.parse(map['timeLengthMins'].toString()),
+      eventFinalStartTime:
+          DateTime.parse(map['eventFinalStartTime'].toString()),
+      eventFinalEndTime: DateTime.parse(map['eventFinalEndTime'].toString()),
+      state: int.parse(map['state'].toString()),
+      matchTime: DateTime.parse(map['matchTime'].toString()),
+      location: map['location'],
+      remindStatus: map['remindStatus'] == 1,
+      remindTime: DateTime.parse(map['remindTime'].toString()),
+      remark: map['remark'],
+      friends: [],
+    );
   }
 }

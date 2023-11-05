@@ -1,4 +1,4 @@
-import 'package:create_event2/page/vote_page.dart';
+import 'package:create_event2/page/vote/vote_page.dart';
 import 'package:flutter/material.dart';
 
 class ChatRoomPage extends StatefulWidget {

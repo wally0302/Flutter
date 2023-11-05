@@ -1,5 +1,12 @@
+import 'dart:math';
+
+import 'package:create_event2/model/event.dart';
+import 'package:create_event2/services/sqlite.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/material.dart';
+
+import '../model/journey.dart';
 
 class APIservice {
   ////////////////////// 行程(journey) //////////////////////
@@ -21,44 +28,111 @@ class APIservice {
       return [false, response];
     }
   }
-  //查詢行程
 
-  //刪除行程
+  // 編輯行程 ok
+  static Future<List<dynamic>> editJourney(
+      {required Map<String, dynamic> content, required int jID}) async {
+    String url =
+        "http://163.22.17.145:3000/api/journey/updateJourney/$jID"; //api後接檔案名稱
+    final response = await http.put(
+      Uri.parse(url),
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('編輯行程成功');
+      return [true, response];
+    } else {
+      print(response);
+      return [false, response];
+    }
+  }
+
+  //刪除行程 ok
   static Future<List<dynamic>> deleteJourney(
-      {required Map<String, dynamic> content}) async {
-    final url =
-        Uri.parse("http://163.22.17.145:3000/api/journey/deteleJourney");
+      {required Map<String, dynamic> content, required int jID}) async {
+    String url =
+        "http://163.22.17.145:3000/api/journey/deleteJourney/$jID"; //api後接檔案名稱
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    ); // 根據使用者的token新增資料
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('刪除行程成功');
+      return [true, responseString];
+    } else {
+      print(responseString);
+      return [false, responseString];
+    }
+  }
 
+  // 抓使用者行事曆所有的 journey ，還會把資料存入 sqlite  ok
+  static Future<List<dynamic>> selectJourneyAll(
+      {required Map<String, dynamic> content, required String uID}) async {
+    final url =
+        Uri.parse("http://163.22.17.145:3000/api/journey/getAllJourney/$uID");
+    await Sqlite.clear(tableName: "journey"); // 清空資料表
     final response = await http.post(
       url,
       headers: <String, String>{'Content-Type': 'application/json'},
       body: jsonEncode(content),
     );
-    final responseString = jsonDecode(response.body);
+    final serverJourney = jsonDecode(response.body); //是一個 List<dynamic>
     if (response.statusCode == 200 || response.statusCode == 400) {
-      return [true, responseString];
+      // 是將從 server 取得的行程資料轉換成本地端的 Event 物件，以便在本地端顯示行程
+      for (var journey in serverJourney) {
+        // 從資料庫抓出來的時間轉成int
+        int journeyStartTimeInt = journey['journeyStartTime'];
+        // print('--old---');
+        // print(journeyStartTimeInt);//202311051242
+        int journeyEndTimeInt = journey['journeyEndTime'];
+        final Journey newJourneyData = Journey(
+            jID: journey['jID'],
+            uID: journey['uID'],
+            journeyName: journey['journeyName'].toString(),
+            journeyStartTime: DateTime(
+                //2023-11-05 12:42:00.000
+                journeyStartTimeInt ~/ 100000000, // 年
+                (journeyStartTimeInt % 100000000) ~/ 1000000, // 月
+                (journeyStartTimeInt % 1000000) ~/ 10000, // 日
+                (journeyStartTimeInt % 10000) ~/ 100, // 小时
+                journeyStartTimeInt % 100 // 分钟
+                ),
+            journeyEndTime: DateTime(
+                journeyEndTimeInt ~/ 100000000, // 年
+                (journeyEndTimeInt % 100000000) ~/ 1000000, // 月
+                (journeyEndTimeInt % 1000000) ~/ 10000, // 日
+                (journeyEndTimeInt % 10000) ~/ 100, // 小时
+                journeyEndTimeInt % 100 // 分钟
+                ),
+            color: Color(journey['color']),
+            location: journey['location'],
+            remark: journey['remark'],
+            remindTime: journey['remindTime'],
+            remindStatus:
+                journey['remindStatus'] == 1, // "==1" 將資料庫的 0, 1 轉成 bool
+            isAllDay: journey['isAllDay'] == 1);
+        // print('--new---');
+        // print(newJourneyData.journeyStartTime);
+        Sqlite.insert(
+            tableName: 'journey',
+            insertData: newJourneyData.toMap()); // 將資料存入本地端資料庫
+      }
+      print('完成 刷新 sqlite 活動資料表');
+      return serverJourney;
     } else {
-      return [false, response];
+      print('失敗 刷新 sqlite 活動資料表');
+      print('失敗 $serverJourney response.statusCode ${response.statusCode}');
+      return serverJourney;
     }
   }
 
-// JourneyAPI.deleteJourney(jID: 123);
-  static Future<List<dynamic>> deleteJourney1({required int jID}) async {
-    final url = Uri.parse("http://163.22.17.145:3000/api/journey/$jID");
-
-    final response = await http.delete(url);
-
-    final responseString = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      return [true, responseString];
-    } else {
-      return [false, responseString];
-    }
-  }
   ////////////////////// 活動(event) //////////////////////
 
-  //新增活動  OK
+  //新增活動 ok
   static Future<List<dynamic>> addEvent(
       {required Map<String, dynamic> content}) async {
     final url = Uri.parse("http://163.22.17.145:3000/api/event/insertEvent");
@@ -76,13 +150,129 @@ class APIservice {
     }
   }
 
-  //活動列表的查詢活動 (需要回傳 eid)
+  // 抓使用者行事曆所有的 event ，還會把資料存入 sqlite
+  static Future<List<dynamic>> selectEventAll(
+      {required Map<String, dynamic> content, required String uID}) async {
+    final url =
+        Uri.parse("http://163.22.17.145:3000/api/event/getAllEvent/$uID");
+    await Sqlite.clear(tableName: "event"); // 清空資料表
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final serverEvent = jsonDecode(response.body); //是一個 List<dynamic>
+    print('---serverEvent---');
+    print(serverEvent);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      for (var event in serverEvent) {
+        int eventBlockStartTimeInt = event['eventBlockStartTime'];
+        int eventBlockEndTimeInt = event['eventBlockEndTime'];
+        int eventFinalStartTimeInt = event['eventFinalStartTime'];
+        int eventFinalEndTimeInt = event['eventFinalEndTime'];
+        int matchTimeInt = event['matchTime'];
+        int eventTimeInt = event['eventTime'];
+        final Event newEventData = Event(
+          eID: event['eID'],
+          uID: event['uID'],
+          //名稱
+          eventName: event['eventName'].toString(),
+
+          // 匹配起始日
+          eventBlockStartTime: DateTime(
+            eventBlockStartTimeInt ~/ 10000, // 年
+            (eventBlockStartTimeInt % 10000) ~/ 100, // 月
+            eventBlockStartTimeInt % 100, // 日
+          ),
+
+          // 匹配結束日
+          eventBlockEndTime: DateTime(
+              eventBlockEndTimeInt ~/ 10000, // 年
+              (eventBlockEndTimeInt % 10000) ~/ 100, // 月
+              (eventBlockEndTimeInt % 100) // 日
+              ),
+          //活動預計開始時間
+          eventTime: DateTime(
+            eventTimeInt ~/ 100, // 小时，使用整除来获取
+            eventTimeInt % 100, // 分钟，使用求余来获取
+          ),
+          //活動預計時間長度
+          timeLengtHours: event['timeLengtHours'],
+          timeLengthMins: event['timeLengthMins'],
+          //地點
+          location: event['location'],
+          //備註
+          remark: event['remark'],
+          //參加好友
+          friends: event['friends'],
+          //媒合開始時間
+          matchTime: DateTime(
+              matchTimeInt ~/ 100000000, // 年
+              (matchTimeInt % 100000000) ~/ 1000000, // 月
+              (matchTimeInt % 1000000) ~/ 10000, // 日
+              (matchTimeInt % 10000) ~/ 100, // 小时
+              matchTimeInt % 100 // 分钟
+              ),
+          //提醒是否開 1:開啟 0:關閉
+          remindStatus: event['remindStatus'],
+          //提醒時間
+          remindTime: event['remindTime'],
+          //-------------------------------------------
+          //後端會回傳給前端的資料
+          //1:已完成媒合 0:未完成媒合
+          state: event['state'],
+          //最終確定時間 年月日時分
+          eventFinalStartTime: DateTime(
+              eventFinalStartTimeInt ~/ 100000000, // 年
+              (eventFinalStartTimeInt % 100000000) ~/ 1000000, // 月
+              (eventFinalStartTimeInt % 1000000) ~/ 10000, // 日
+              (eventFinalStartTimeInt % 10000) ~/ 100, // 小时
+              eventFinalStartTimeInt % 100 // 分钟
+              ),
+          eventFinalEndTime: DateTime(
+              eventFinalEndTimeInt ~/ 100000000, // 年
+              (eventFinalEndTimeInt % 100000000) ~/ 1000000, // 月
+              (eventFinalEndTimeInt % 1000000) ~/ 10000, // 日
+              (eventFinalEndTimeInt % 10000) ~/ 100, // 小时
+              eventFinalEndTimeInt % 100 // 分钟
+              ),
+        );
+        Sqlite.insert(
+            tableName: 'event',
+            insertData: newEventData.toMap()); // 將資料存入本地端資料庫
+      }
+      print('完成 刷新 sqlite 行程資料表');
+      return serverEvent;
+    } else {
+      print('失敗 刷新 sqlite 行程資料表');
+      print('失敗 $serverEvent response.statusCode ${response.statusCode}');
+      return serverEvent;
+    }
+  }
 
   //刪除活動 透過 eid 刪除
   static Future<List<dynamic>> deleteEvent(
       {required Map<String, dynamic> content}) async {
     final url = Uri.parse("http://163.22.17.145:3000/api/event/deleteEvent/");
     // 刪除指定的 $uid : http://163.22.17.145:3000/api/event/deleteEvent/$eid
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      return [true, responseString];
+    } else {
+      return [false, response];
+    }
+  }
+
+  //活動列表的查詢活動 (需要回傳 eid)
+  static Future<List<dynamic>> getAllEvent(
+      {required Map<String, dynamic> content}) async {
+    final url = Uri.parse("http://163.22.17.145:3000/api/event/getAllEvent");
+
     final response = await http.post(
       url,
       headers: <String, String>{'Content-Type': 'application/json'},

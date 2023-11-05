@@ -1,12 +1,12 @@
-import 'package:create_event2/page/add_vote_page.dart';
-import 'package:create_event2/page/vote_multiple.dart';
-import 'package:create_event2/page/vote_single.dart';
+import 'package:create_event2/page/vote/add_vote_page.dart';
+import 'package:create_event2/page/vote/vote_multiple.dart';
+import 'package:create_event2/page/vote/vote_single.dart';
 import 'package:create_event2/provider/vote_provider.dart';
-import 'package:create_event2/page/voteList.dart';
+import 'package:create_event2/page/vote/voteList.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../model/vote.dart';
+import '../../model/vote.dart';
 
 class VotePage extends StatelessWidget {
   Future<void> _confirmDeleteDialog(BuildContext context, int index) async {

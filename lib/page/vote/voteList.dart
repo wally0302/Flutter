@@ -1,8 +1,8 @@
-import 'package:create_event2/page/vote_result.dart';
+import 'package:create_event2/page/vote/vote_result.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../model/vote.dart';
-import '../provider/vote_provider.dart'; // 根据实际路径进行修改
+import '../../model/vote.dart';
+import '../../provider/vote_provider.dart'; // 根据实际路径进行修改
 
 class VoteList extends StatelessWidget {
   @override

@@ -9,9 +9,9 @@ import 'package:provider/provider.dart';
 import 'package:create_event2/model/journey.dart';
 import 'package:create_event2/model/event.dart';
 import 'package:create_event2/utils.dart';
-import 'package:create_event2/page/journey_viewing_page.dart';
+import 'package:create_event2/page/journey/journey_viewing_page.dart';
 
-import 'event_viewing_page.dart';
+import 'event/event_viewing_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);

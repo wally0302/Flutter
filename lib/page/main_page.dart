@@ -1,4 +1,6 @@
 // ignore_for_file: prefer_const_constructors, depend_on_referenced_packages
+import 'package:create_event2/model/journey.dart';
+import 'package:create_event2/model/journey_data_source.dart';
 import 'package:create_event2/page/selectday_viewing_page.dart';
 import 'package:create_event2/provider/journey_provider.dart';
 import 'package:create_event2/provider/event_provider.dart';
@@ -6,6 +8,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
+import '../model/event.dart';
+import '../model/event_data_source.dart';
+import '../services/http.dart';
+import '../services/sqlite.dart';
 import 'drawer_page.dart';
 
 // 主頁面
@@ -19,9 +25,15 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   // 顯示行事曆方式controller
   final CalendarController _controller = CalendarController();
+  List<Journey> journeylist = [];
+  List<Event> eventlist = [];
 
   @override
   void initState() {
+    Sqlite.dropDatabase(); // 清空 sqlite 資料庫
+    // getCalendarDateJourney();
+    getCalendarDateEvent();
+
     super.initState();
   }
 
@@ -32,11 +44,12 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    final journeys = Provider.of<JourneyProvider>(context).journeys;
-    final events = Provider.of<EventProvider>(context).events;
+    // final journeys = Provider.of<JourneyProvider>(context).journeys;
+    // final events = Provider.of<EventProvider>(context).events;
 
     final List<Appointment> appointments = [];
-    for (final journey in journeys) {
+
+    for (final journey in journeylist) {
       appointments.add(Appointment(
         startTime: journey.journeyStartTime,
         endTime: journey.journeyEndTime,
@@ -44,13 +57,15 @@ class _MainPageState extends State<MainPage> {
         color: journey.color,
       ));
     }
-    for (final event in events) {
-      appointments.add(Appointment(
-        startTime: event.eventBlockStartTime,
-        endTime: event.eventBlockEndTime,
-        subject: event.eventName,
-      ));
-    }
+
+    // for (final event in eventlist) {
+    //   appointments.add(Appointment(
+    //     startTime: event.eventBlockStartTime,
+    //     endTime: event.eventBlockEndTime,
+    //     subject: event.eventName,
+    //   ));
+    // }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
@@ -72,6 +87,7 @@ class _MainPageState extends State<MainPage> {
               textStyle: TextStyle(fontSize: 25)), //左上角顯示日期的字體大小
           view: CalendarView.month, //預設顯示月曆
           dataSource: _DataSource(appointments), // 裝行事曆的資料
+          // dataSource: JourneyDateSource(journeylist), // 顯示journeytest的資料
           cellEndPadding: 5, //
           monthViewSettings: MonthViewSettings(
               appointmentDisplayMode:
@@ -93,6 +109,81 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
     );
+  }
+
+  getCalendarDateJourney() async {
+    // 從server抓使用者行事曆資料
+    var userID = {'uid': '1'}; //到時候要改成登入的使用者
+
+    final result = await APIservice.selectJourneyAll(
+        content: userID, uID: '1'); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
+    print(
+        '------------------------------------------------------------------------------');
+    print("該 $userID 的資料: $result"); //，是一個陣列 [{}, {}, {}]
+    // print(result.length);
+    print(
+        '------------------------------------------------------------------------------');
+    // print(result[0]); // 是一個 {}，裡面有很多個 key:value ，{jID: 42, uID: 12345, journeyName: wally, journeyStartTime: 202308141556, journeyEndTime: 202308141756, isAllDay: 0, location: qqq, remindStatus: 1, remindTime: 0, remark: qqq, color: 4278190080}
+    await Sqlite.open; //開啟資料庫
+    List? queryCalendarTable =
+        await Sqlite.queryAll(tableName: 'journey'); // 從 sqlite 拿資料
+    queryCalendarTable ??= []; // 如果沒有資料，就給一個空陣列
+    setState(() {
+      journeylist = queryCalendarTable!
+          .map((e) => Journey.fromMap(e))
+          .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
+    });
+    // for (var element in queryCalendarTable) {
+    //   print('-----element-----');
+    //   print(element);
+    // }
+    // --------------------------------------
+
+    // print('-----evenTest-----');
+    // print(journeylist); // 是一個 List<Event>，裡面有很多個 Event 物件
+    // for (var event in journeylist) {
+    //   print('-----event-----');
+    //   print(event.journeyName); // 印出 Event 物件的 journeyName
+    // }
+
+    return queryCalendarTable;
+  }
+
+  getCalendarDateEvent() async {
+    // 從server抓使用者行事曆資料
+    var userID = {'uid': 'wally'}; //到時候要改成登入的使用者
+
+    final result = await APIservice.selectEventAll(
+        content: userID, uID: 'wally'); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
+    print(
+        '------------------------------------------------------------------------------');
+    print("該 $userID 的資料: $result"); //，是一個陣列 [{}, {}, {}]
+    print(
+        '------------------------------------------------------------------------------');
+    // print(result[0]); // 是一個 {}，裡面有很多個 key:value ，{jID: 42, uID: 12345, journeyName: wally, journeyStartTime: 202308141556, journeyEndTime: 202308141756, isAllDay: 0, location: qqq, remindStatus: 1, remindTime: 0, remark: qqq, color: 4278190080}
+    // await Sqlite.open; //開啟資料庫
+    // List? queryCalendarTable =
+    //     await Sqlite.queryAll(tableName: 'event'); // 從 sqlite 拿資料
+    // queryCalendarTable ??= []; // 如果沒有資料，就給一個空陣列
+    // setState(() {
+    //   eventlist = queryCalendarTable!
+    //       .map((e) => Event.fromMap(e))
+    //       .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
+    // });
+    // for (var element in queryCalendarTable) {
+    //   print('-----element-----');
+    //   print(element);
+    // }
+    // --------------------------------------
+
+    // print('-----evenTest-----');
+    // print(journeylist); // 是一個 List<Event>，裡面有很多個 Event 物件
+    // for (var event in journeylist) {
+    //   print('-----event-----');
+    //   print(event.journeyName); // 印出 Event 物件的 journeyName
+    // }
+
+    // return queryCalendarTable;
   }
 }
 

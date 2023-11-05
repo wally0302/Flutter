@@ -1,8 +1,8 @@
 import 'package:create_event2/model/vote.dart'; // 请根据实际路径修改
-import 'package:create_event2/page/vote_result.dart';
+import 'package:create_event2/page/vote/vote_result.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../provider/vote_provider.dart';
+import '../../provider/vote_provider.dart';
 
 class SingleVote extends StatefulWidget {
   final Vote vote;

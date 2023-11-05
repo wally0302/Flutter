@@ -3,19 +3,19 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:create_event2/model/event.dart';
-import 'package:create_event2/page/event_page.dart';
+import 'package:create_event2/page/event/event_page.dart';
 import 'package:create_event2/provider/event_provider.dart';
 import 'package:create_event2/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:create_event2/page/event_viewing_page.dart';
+import 'package:create_event2/page/event/event_viewing_page.dart';
 // import 'package:get/get.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-import '../model/friend.dart';
-import '../services/http.dart';
+import '../../model/friend.dart';
+import '../../services/http.dart';
 
 class EventEditingPage extends StatefulWidget {
   final Event? event;
@@ -47,7 +47,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
   final remarkController = TextEditingController(); //備註
   List<Friend> invitedFriends = []; // 邀請的好友
   late DateTime matchTime; // 媒合開始時間
-  int enableNotification = 0; //提醒是否開啟
+  bool enableNotification = false; //提醒是否開啟
   //--------------------------------------------------------//
 
   late int selectedValue;
@@ -249,7 +249,8 @@ class _EventEditingPageState extends State<EventEditingPage> {
   //輸入完成儲存資料
   Future saveForm() async {
     final isvalid = _formKey.currentState!.validate();
-    String uID = 'q';
+    String uID = '12345';
+    // print('---------------------------');
     if (isvalid) {
       final event = Event(
         // eid:eID,
@@ -272,15 +273,15 @@ class _EventEditingPageState extends State<EventEditingPage> {
       );
       final isEditing = widget.event != null;
       final provider = Provider.of<EventProvider>(context, listen: false);
-
+      print('uid: $uID');
       if (isEditing) {
         provider.editEvent(event, widget.event!);
       } else {
         provider.addSortedEvent(event);
         final result =
             await APIservice.addEvent(content: event.toMap()); //新增活動到資料庫
-        // print("新增活動到資料庫");
-        // print(result[1]);
+        print("新增活動到資料庫");
+        print(result[1]);
       }
       Navigator.pop(context); // 返回上一頁
     }
@@ -621,7 +622,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
         trailing: Switch(
           value: enableNotification == 1 ? true : false,
           onChanged: (value) =>
-              setState(() => enableNotification = value ? 1 : 0),
+              setState(() => enableNotification = value ? true : false),
         ),
       );
 

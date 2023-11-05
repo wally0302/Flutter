@@ -4,8 +4,8 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:create_event2/page/chat_room_page.dart';
-import 'package:create_event2/page/event_page.dart';
-import 'package:create_event2/page/vote_page.dart';
+import 'package:create_event2/page/event/event_page.dart';
+import 'package:create_event2/page/vote/vote_page.dart';
 import 'package:create_event2/provider/event_provider.dart';
 import 'package:create_event2/provider/journey_provider.dart';
 import 'package:create_event2/provider/vote_provider.dart';
@@ -44,7 +44,7 @@ Future main() async {
 class MyApp extends StatelessWidget {
   static const String title = '好揪不見';
 
-  const MyApp({Key? key}) : super(key: key); // 修正 super() 的參數
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +79,7 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData.dark()
           .copyWith(scaffoldBackgroundColor: Colors.black), // 深色主題
       home: LoginPage(), // 預設頁面
+      // home: VotePage(), // 預設頁面
     );
   }
 }

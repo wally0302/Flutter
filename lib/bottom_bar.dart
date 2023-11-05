@@ -1,13 +1,13 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:create_event2/page/event_page.dart';
+import 'package:create_event2/page/event/event_page.dart';
 import 'package:create_event2/page/main_page.dart';
 import 'package:flutter/material.dart';
 import 'package:create_event2/main.dart';
 
-import 'package:create_event2/page/journey_editing_page.dart';
+import 'package:create_event2/page/journey/journey_editing_page.dart';
 import 'package:create_event2/page/search_page.dart';
-import 'package:create_event2/page/event_editing_page.dart';
+import 'package:create_event2/page/event/event_editing_page.dart';
 import 'package:create_event2/page/friend_page.dart';
 
 class MyBottomBar extends StatefulWidget {

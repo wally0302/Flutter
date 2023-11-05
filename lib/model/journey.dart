@@ -28,6 +28,7 @@ class Journey {
   });
 
   get start => null;
+  //  讓 local  可以"讀取"的格式
   factory Journey.fromMap(Map<String, dynamic> map) {
     int journeyStartTimeInt = map['journeyStartTime'];
     int journeyEndTimeInt = map['journeyEndTime'];
@@ -39,7 +40,6 @@ class Journey {
         (journeyStartTimeInt % 10000) ~/ 100, // 小时
         journeyStartTimeInt % 100 // 分钟
         );
-
     DateTime journeyEndTime = DateTime(
         journeyEndTimeInt ~/ 100000000, // 年
         (journeyEndTimeInt % 100000000) ~/ 1000000, // 月
@@ -63,9 +63,9 @@ class Journey {
   }
   // journeyStartTime.year * 100000000 +journeyStartTime.month * 1000000 +journeyStartTime.day * 10000 +journeyStartTime.hour * 100 +journeyStartTime.minute
 
-  //存入資料庫的格式
   Map<String, dynamic> toMap() {
     return {
+      'jID': jID,
       'journeyName': journeyName,
       'uID': uID,
       'journeyStartTime': journeyStartTime.year * 100000000 +

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../model/vote.dart';
-import '../provider/vote_provider.dart';
+import '../../model/vote.dart';
+import '../../provider/vote_provider.dart';
 
 class VoteResult extends StatefulWidget {
   final Vote originalVote; // 将属性名称更改为originalVote，以避免与局部变量混淆

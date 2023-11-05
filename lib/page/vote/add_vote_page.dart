@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../model/vote.dart';
-import '../provider/vote_provider.dart';
+import '../../model/vote.dart';
+import '../../provider/vote_provider.dart';
 
 class AddVotePage extends StatefulWidget {
   @override

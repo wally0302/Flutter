@@ -1,7 +1,7 @@
 // 活動詳細資料頁面
 // ignore_for_file: prefer_const_constructors, unused_import, duplicate_ignore
 
-import 'package:create_event2/page/event_editing_page.dart';
+import 'package:create_event2/page/event/event_editing_page.dart';
 import 'package:create_event2/provider/event_provider.dart';
 // ignore: unused_import
 import 'package:create_event2/utils.dart';
@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:create_event2/model/event.dart';
 import 'package:get/get.dart';
 
-import '../model/friend.dart';
+import '../../model/friend.dart';
 
 class EventViewingPage extends StatelessWidget {
   final Event event;
@@ -347,7 +347,7 @@ class EventViewingPage extends StatelessWidget {
     );
   }
 
-  Widget buildNotification(Event event, int notification) {
+  Widget buildNotification(Event event, bool notification) {
     if (event.remindStatus == 1) {
       return Row(
         children: [

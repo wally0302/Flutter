@@ -1,7 +1,7 @@
 // 行程詳細資料頁面
 // ignore_for_file: prefer_const_constructors, unused_import, duplicate_ignore
 
-import 'package:create_event2/page/journey_editing_page.dart';
+import 'package:create_event2/page/journey/journey_editing_page.dart';
 import 'package:create_event2/provider/journey_provider.dart';
 // ignore: unused_import
 import 'package:create_event2/utils.dart';
@@ -11,7 +11,10 @@ import 'package:provider/provider.dart';
 import 'package:create_event2/model/journey.dart';
 import 'package:get/get.dart';
 
-class JourneyViewingPage extends StatelessWidget {
+import '../../services/http.dart';
+import '../../services/sqlite.dart';
+
+class JourneyViewingPage extends StatefulWidget {
   final Journey journey;
 
   const JourneyViewingPage({
@@ -20,23 +23,45 @@ class JourneyViewingPage extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _JourneyViewingPageState createState() => _JourneyViewingPageState();
+}
+
+class _JourneyViewingPageState extends State<JourneyViewingPage> {
+  late Journey _currentJourney;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentJourney = widget.journey;
+  }
+
+  getCalendarDate() async {
+    //await Sqlite.dropDatabase();
+    await Sqlite.open; //開啟資料庫
+    List? queryCalendarTable = await Sqlite.queryAll(tableName: 'journey');
+    queryCalendarTable ??= [];
+    for (var element in queryCalendarTable) {
+      print(element);
+    }
+    return queryCalendarTable;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        //左邊的 X
         leading: CloseButton(
           onPressed: () {
-            Navigator.pop(context, journey); // 關閉此頁面 返回上一頁
+            Navigator.of(context).pop(_currentJourney);
           },
         ),
-        //右邊的 編輯 和 刪除
-        actions: buildViewingActions(context, journey),
+        actions: buildViewingActions(context, _currentJourney),
       ),
       body: ListView(
         padding: EdgeInsets.all(32),
         children: <Widget>[
           Text(
-            journey.journeyName,
+            _currentJourney.journeyName,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 30,
@@ -46,19 +71,19 @@ class JourneyViewingPage extends StatelessWidget {
           SizedBox(
             height: 24,
           ),
-          buildDateTime(journey), //時間
+          buildDateTime(_currentJourney),
           const SizedBox(
             height: 24,
           ),
-          buildLocation(journey), //地點
+          buildLocation(_currentJourney),
           const SizedBox(
             height: 24,
           ),
-          buildRemark(journey), //備註
+          buildRemark(_currentJourney),
           const SizedBox(
             height: 24,
           ),
-          buildNotification(journey, journey.remindTime) //提醒
+          buildNotification(_currentJourney, _currentJourney.remindTime)
         ],
       ),
     );
@@ -70,7 +95,7 @@ class JourneyViewingPage extends StatelessWidget {
       children: [
         //整天 or 非整天
         buildDate(
-            journey.isAllDay ? '全天起始日期：' : '起始時間：', journey.journeyStartTime),
+            journey.isAllDay ? '全天起始日期：' : '起始時1間：', journey.journeyStartTime),
         buildDate(
             journey.isAllDay ? '全天結束日期：' : '結束時間：', journey.journeyEndTime),
       ],
@@ -92,7 +117,7 @@ class JourneyViewingPage extends StatelessWidget {
           ),
         ),
         Text(
-          !journey.isAllDay ? dateString1 : dateString2,
+          !_currentJourney.isAllDay ? dateString1 : dateString2,
           style: TextStyle(fontSize: 18),
         )
       ],
@@ -170,53 +195,67 @@ class JourneyViewingPage extends StatelessWidget {
   }
 
   List<Widget> buildViewingActions(BuildContext context, Journey journey) {
-    final journeyProvider =
-        Provider.of<JourneyProvider>(context, listen: false);
-
     return [
       IconButton(
         icon: Icon(Icons.edit),
-        onPressed: () {
-          Navigator.of(context).pushReplacement(
+        onPressed: () async {
+          final editedJourney = await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => JourneyEditingPage(
-                journey: journey,
+                journey: _currentJourney,
                 addTodayDate: true,
-                time: journey.journeyStartTime,
+                time: _currentJourney.journeyEndTime,
               ),
             ),
           );
+
+          if (editedJourney != null) {
+            setState(() {
+              _currentJourney = editedJourney;
+            });
+          }
+          print('顯示事件:');
+          print(_currentJourney.journeyName);
+          getCalendarDate();
         },
       ),
       IconButton(
         icon: Icon(Icons.delete),
         onPressed: () {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) => AlertDialog(
-              title: Text('確認刪除'),
-              content: Text('確定要刪除這個行程嗎？'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: Text('取消'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    journeyProvider.deleteJourney(journey);
-                    //回到主畫面
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/MyBottomBar2',
-                      ModalRoute.withName('/'),
-                    );
-                  },
-                  child: Text('確定'),
-                ),
-              ],
-            ),
+          Get.defaultDialog(
+            title: "提示",
+            titleStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            middleText: "是否刪除此行程?",
+            middleTextStyle: TextStyle(fontSize: 18),
+            backgroundColor: Colors.pinkAccent,
+            radius: 30,
+            textCancel: "取消",
+            cancelTextColor: Colors.white,
+            textConfirm: "確認",
+            confirmTextColor: Colors.white,
+            buttonColor: Colors.blueGrey,
+            onCancel: () {
+              Navigator.of(context).pop();
+            },
+            onConfirm: () async {
+              final List result = await APIservice.deleteJourney(
+                  content: _currentJourney.toMap(), jID: _currentJourney.jID!);
+              print(result[0]);
+              if (result[0]) {
+                var result = await Sqlite.deleteJourney(
+                  tableName: 'journey',
+                  tableIdName: 'jid',
+                  deleteId: _currentJourney.jID ?? 0,
+                );
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/MyBottomBar2',
+                  ModalRoute.withName('/'),
+                );
+              } else {
+                print('在server刪除行程失敗');
+              }
+            },
           );
         },
       ),
