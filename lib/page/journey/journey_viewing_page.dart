@@ -172,7 +172,7 @@ class _JourneyViewingPageState extends State<JourneyViewingPage> {
             '提醒：',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          Text(notification != 0 ? '$notification 分鐘' : '時間到提醒',
+          Text(notification != 0 ? '$notification 分鐘' : '1時間到提醒',
               style: TextStyle(fontSize: 18))
         ],
       );

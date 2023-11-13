@@ -6,9 +6,28 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
+import '../model/friend.dart';
 import '../model/journey.dart';
 
 class APIservice {
+  // 將 uID & userMall  傳給 server
+  static Future<List<dynamic>> signIn(
+      {required Map<String, dynamic> content}) async {
+    final url = Uri.parse("http://163.22.17.145:3000/api/user/signUp");
+
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      return [true, responseString];
+    } else {
+      return [false, response];
+    }
+  }
+
   ////////////////////// 行程(journey) //////////////////////
   // 新增行程 ok
   static Future<List<dynamic>> addJourney(
@@ -106,7 +125,7 @@ class APIservice {
                 (journeyEndTimeInt % 100000000) ~/ 1000000, // 月
                 (journeyEndTimeInt % 1000000) ~/ 10000, // 日
                 (journeyEndTimeInt % 10000) ~/ 100, // 小时
-                journeyEndTimeInt % 100 // 分钟
+                journeyEndTimeInt % 100 //
                 ),
             color: Color(journey['color']),
             location: journey['location'],
@@ -150,11 +169,12 @@ class APIservice {
     }
   }
 
-  // 抓使用者行事曆所有的 event ，還會把資料存入 sqlite
-  static Future<List<dynamic>> selectEventAll(
-      {required Map<String, dynamic> content, required String uID}) async {
+  // 抓房主行事曆所有的 event ，還會把資料存入 sqlite
+  static Future<List<dynamic>> selectHomeEventAll(
+      {required Map<String, dynamic> content, required String userMall}) async {
     final url =
-        Uri.parse("http://163.22.17.145:3000/api/event/getAllEvent/$uID");
+        Uri.parse("http://163.22.17.145:3000/api/event/getAllEvent/$userMall");
+
     await Sqlite.clear(tableName: "event"); // 清空資料表
     final response = await http.post(
       url,
@@ -162,8 +182,9 @@ class APIservice {
       body: jsonEncode(content),
     );
     final serverEvent = jsonDecode(response.body); //是一個 List<dynamic>
-    print('---serverEvent---');
-    print(serverEvent);
+    // print('---serverEvent---');
+    // print(serverEvent);
+
     if (response.statusCode == 200 || response.statusCode == 400) {
       for (var event in serverEvent) {
         int eventBlockStartTimeInt = event['eventBlockStartTime'];
@@ -172,39 +193,52 @@ class APIservice {
         int eventFinalEndTimeInt = event['eventFinalEndTime'];
         int matchTimeInt = event['matchTime'];
         int eventTimeInt = event['eventTime'];
+        int timeLengthHoursInt = event['timeLengthHours'];
+        String friendsString = event['friends']; //wally,jack
+        List<String> friendsList = friendsString.split(','); //["wally", "jack"]
+        List<Friend> friendObjects =
+            friendsList.map((name) => Friend.fromName(name)).toList();
+        int remindTimeInt = event['remindTime'];
         final Event newEventData = Event(
           eID: event['eID'],
-          uID: event['uID'],
+          userMall: event['userMall'],
           //名稱
           eventName: event['eventName'].toString(),
 
           // 匹配起始日
           eventBlockStartTime: DateTime(
-            eventBlockStartTimeInt ~/ 10000, // 年
-            (eventBlockStartTimeInt % 10000) ~/ 100, // 月
-            eventBlockStartTimeInt % 100, // 日
-          ),
+              eventBlockStartTimeInt ~/ 100000000, // 年
+              (eventBlockStartTimeInt % 100000000) ~/ 1000000, // 月
+              (eventBlockStartTimeInt % 1000000) ~/ 10000, // 日
+              (eventBlockStartTimeInt % 10000) ~/ 100, // 小时
+              eventBlockStartTimeInt % 100 //
+              ),
 
           // 匹配結束日
           eventBlockEndTime: DateTime(
-              eventBlockEndTimeInt ~/ 10000, // 年
-              (eventBlockEndTimeInt % 10000) ~/ 100, // 月
-              (eventBlockEndTimeInt % 100) // 日
+              eventBlockEndTimeInt ~/ 100000000, // 年
+              (eventBlockEndTimeInt % 100000000) ~/ 1000000, // 月
+              (eventBlockEndTimeInt % 1000000) ~/ 10000, // 日
+              (eventBlockEndTimeInt % 10000) ~/ 100, // 小时
+              eventBlockEndTimeInt % 100 //
               ),
           //活動預計開始時間
           eventTime: DateTime(
-            eventTimeInt ~/ 100, // 小时，使用整除来获取
-            eventTimeInt % 100, // 分钟，使用求余来获取
-          ),
+              eventTimeInt ~/ 100000000, // 年
+              (eventTimeInt % 100000000) ~/ 1000000, // 月
+              (eventTimeInt % 1000000) ~/ 10000, // 日
+              (eventTimeInt % 10000) ~/ 100, // 小时
+              eventTimeInt % 100 // 分钟
+              ),
           //活動預計時間長度
-          timeLengtHours: event['timeLengtHours'],
-          timeLengthMins: event['timeLengthMins'],
+          timeLengthHours: timeLengthHoursInt,
+          // timeLengthMins: timeLengthMinsInt,
           //地點
           location: event['location'],
           //備註
           remark: event['remark'],
           //參加好友
-          friends: event['friends'],
+          friends: friendObjects,
           //媒合開始時間
           matchTime: DateTime(
               matchTimeInt ~/ 100000000, // 年
@@ -214,9 +248,15 @@ class APIservice {
               matchTimeInt % 100 // 分钟
               ),
           //提醒是否開 1:開啟 0:關閉
-          remindStatus: event['remindStatus'],
+          remindStatus: event['remindStatus'] == 1,
           //提醒時間
-          remindTime: event['remindTime'],
+          remindTime: DateTime(
+              remindTimeInt ~/ 100000000, // 年
+              (remindTimeInt % 100000000) ~/ 1000000, // 月
+              (remindTimeInt % 1000000) ~/ 10000, // 日
+              (remindTimeInt % 10000) ~/ 100, // 小时
+              remindTimeInt % 100 // 分钟
+              ),
           //-------------------------------------------
           //後端會回傳給前端的資料
           //1:已完成媒合 0:未完成媒合
@@ -237,6 +277,12 @@ class APIservice {
               eventFinalEndTimeInt % 100 // 分钟
               ),
         );
+
+        // print('---newEventData---');
+        // //要取得時間後面再加上 .day .hour .minute
+        // print(newEventData.eventBlockStartTime.day);
+        // print(newEventData.eventBlockEndTime.hour);
+
         Sqlite.insert(
             tableName: 'event',
             insertData: newEventData.toMap()); // 將資料存入本地端資料庫
@@ -250,12 +296,140 @@ class APIservice {
     }
   }
 
+  // 抓 使用者有參與 的 event 資料
+  static Future<List<dynamic>> selectGuestEventAll(
+      {required Map<String, dynamic> content,
+      required String guestMall}) async {
+    final url = Uri.parse(
+        "http://163.22.17.145:3000/api/event/getEventByFriend/$guestMall");
+
+    // await Sqlite.clear(tableName: "event"); // 清空資料表
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final serverGuestEvent = jsonDecode(response.body); //是一個 List<dynamic>
+    print('---serverGuestEvent---');
+    print(serverGuestEvent);
+
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      for (var event in serverGuestEvent) {
+        int eventBlockStartTimeInt = event['eventBlockStartTime'];
+        int eventBlockEndTimeInt = event['eventBlockEndTime'];
+        int eventFinalStartTimeInt = event['eventFinalStartTime'];
+        int eventFinalEndTimeInt = event['eventFinalEndTime'];
+        int matchTimeInt = event['matchTime'];
+        int eventTimeInt = event['eventTime'];
+        int timeLengthHoursInt = event['timeLengthHours'];
+        String friendsString = event['friends']; //wally,jack
+        List<String> friendsList = friendsString.split(','); //["wally", "jack"]
+        List<Friend> friendObjects =
+            friendsList.map((name) => Friend.fromName(name)).toList();
+        int remindTimeInt = event['remindTime'];
+        final Event newEventData = Event(
+          eID: event['eID'],
+          userMall: event['userMall'],
+          //名稱
+          eventName: event['eventName'].toString(),
+
+          // 匹配起始日
+          eventBlockStartTime: DateTime(
+              eventBlockStartTimeInt ~/ 100000000, // 年
+              (eventBlockStartTimeInt % 100000000) ~/ 1000000, // 月
+              (eventBlockStartTimeInt % 1000000) ~/ 10000, // 日
+              (eventBlockStartTimeInt % 10000) ~/ 100, // 小时
+              eventBlockStartTimeInt % 100 //
+              ),
+
+          // 匹配結束日
+          eventBlockEndTime: DateTime(
+              eventBlockEndTimeInt ~/ 100000000, // 年
+              (eventBlockEndTimeInt % 100000000) ~/ 1000000, // 月
+              (eventBlockEndTimeInt % 1000000) ~/ 10000, // 日
+              (eventBlockEndTimeInt % 10000) ~/ 100, // 小时
+              eventBlockEndTimeInt % 100 //
+              ),
+          //活動預計開始時間
+          eventTime: DateTime(
+              eventTimeInt ~/ 100000000, // 年
+              (eventTimeInt % 100000000) ~/ 1000000, // 月
+              (eventTimeInt % 1000000) ~/ 10000, // 日
+              (eventTimeInt % 10000) ~/ 100, // 小时
+              eventTimeInt % 100 // 分钟
+              ),
+          //活動預計時間長度
+          timeLengthHours: timeLengthHoursInt,
+          // timeLengthMins: timeLengthMinsInt,
+          //地點
+          location: event['location'],
+          //備註
+          remark: event['remark'],
+          //參加好友
+          friends: friendObjects,
+          //媒合開始時間
+          matchTime: DateTime(
+              matchTimeInt ~/ 100000000, // 年
+              (matchTimeInt % 100000000) ~/ 1000000, // 月
+              (matchTimeInt % 1000000) ~/ 10000, // 日
+              (matchTimeInt % 10000) ~/ 100, // 小时
+              matchTimeInt % 100 // 分钟
+              ),
+          //提醒是否開 1:開啟 0:關閉
+          remindStatus: event['remindStatus'] == 1,
+          //提醒時間
+          remindTime: DateTime(
+              remindTimeInt ~/ 100000000, // 年
+              (remindTimeInt % 100000000) ~/ 1000000, // 月
+              (remindTimeInt % 1000000) ~/ 10000, // 日
+              (remindTimeInt % 10000) ~/ 100, // 小时
+              remindTimeInt % 100 // 分钟
+              ),
+          //-------------------------------------------
+          //後端會回傳給前端的資料
+          //1:已完成媒合 0:未完成媒合
+          state: event['state'],
+          //最終確定時間 年月日時分
+          eventFinalStartTime: DateTime(
+              eventFinalStartTimeInt ~/ 100000000, // 年
+              (eventFinalStartTimeInt % 100000000) ~/ 1000000, // 月
+              (eventFinalStartTimeInt % 1000000) ~/ 10000, // 日
+              (eventFinalStartTimeInt % 10000) ~/ 100, // 小时
+              eventFinalStartTimeInt % 100 // 分钟
+              ),
+          eventFinalEndTime: DateTime(
+              eventFinalEndTimeInt ~/ 100000000, // 年
+              (eventFinalEndTimeInt % 100000000) ~/ 1000000, // 月
+              (eventFinalEndTimeInt % 1000000) ~/ 10000, // 日
+              (eventFinalEndTimeInt % 10000) ~/ 100, // 小时
+              eventFinalEndTimeInt % 100 // 分钟
+              ),
+        );
+
+        // print('---newEventData---');
+        // //要取得時間後面再加上 .day .hour .minute
+        // print(newEventData.eventBlockStartTime.day);
+        // print(newEventData.eventBlockEndTime.hour);
+
+        // Sqlite.insert(
+        //     tableName: 'event',
+        //     insertData: newEventData.toMap()); // 將資料存入本地端資料庫
+      }
+      print('完成 刷新 sqlite 行程資料表');
+      return serverGuestEvent;
+    } else {
+      print('失敗 刷新 sqlite 行程資料表');
+      print('失敗 $serverGuestEvent response.statusCode ${response.statusCode}');
+      return serverGuestEvent;
+    }
+  }
+
   //刪除活動 透過 eid 刪除
   static Future<List<dynamic>> deleteEvent(
-      {required Map<String, dynamic> content}) async {
-    final url = Uri.parse("http://163.22.17.145:3000/api/event/deleteEvent/");
-    // 刪除指定的 $uid : http://163.22.17.145:3000/api/event/deleteEvent/$eid
-    final response = await http.post(
+      {required Map<String, dynamic> content, required String eID}) async {
+    final url =
+        Uri.parse("http://163.22.17.145:3000/api/event/deleteEvent/$eID");
+    final response = await http.delete(
       url,
       headers: <String, String>{'Content-Type': 'application/json'},
       body: jsonEncode(content),
@@ -268,20 +442,21 @@ class APIservice {
     }
   }
 
-  //活動列表的查詢活動 (需要回傳 eid)
-  static Future<List<dynamic>> getAllEvent(
-      {required Map<String, dynamic> content}) async {
-    final url = Uri.parse("http://163.22.17.145:3000/api/event/getAllEvent");
-
-    final response = await http.post(
-      url,
+  // 編輯活動 ok
+  static Future<List<dynamic>> editEvent(
+      {required Map<String, dynamic> content, required String eID}) async {
+    String url = "http://163.22.17.145:3000/api/event/updateEvent/$eID";
+    final response = await http.put(
+      Uri.parse(url),
       headers: <String, String>{'Content-Type': 'application/json'},
       body: jsonEncode(content),
     );
-    final responseString = jsonDecode(response.body);
+
     if (response.statusCode == 200 || response.statusCode == 400) {
-      return [true, responseString];
+      print('編輯活動成功');
+      return [true, response];
     } else {
+      print(response);
       return [false, response];
     }
   }

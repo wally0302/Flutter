@@ -49,9 +49,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildTextField(
-                        _usernameController, '使用者名稱', usernameError),
-                    SizedBox(height: 8),
+                    // _buildTextField(
+                    //     _usernameController, '使用者名稱', usernameError),
+                    // SizedBox(height: 8),
                     _buildTextField(_emailController, '帳號 (電子郵件)', emailError),
                     SizedBox(height: 8),
                     _buildTextField(_passwordController, '密碼', passwordError,
@@ -80,7 +80,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             fontWeight: FontWeight.w500, // 字體粗細
                           ),
                         ),
-                        onPressed: _register, // 按下按鈕時執行的方法
+                        onPressed: _register,
                       ),
                     ),
                   ],
@@ -111,7 +111,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     setState(() {
-      usernameError = _usernameController.text.isEmpty ? '該欄位不能為空' : null;
+      // usernameError = _usernameController.text.isEmpty ? '該欄位不能為空' : null;
       emailError = _emailController.text.isEmpty ? '該欄位不能為空' : null;
       passwordError = _passwordController.text.isEmpty ? '該欄位不能為空' : null;
       confirmPasswordError =
@@ -135,6 +135,9 @@ class _RegisterPageState extends State<RegisterPage> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+      //當成功註冊後，才會印出來 name 和 email
+      // print(_usernameController.text);
+      print(_emailController.text);
 
       if (user != null) {
         await user.user!.updateProfile(displayName: _usernameController.text);

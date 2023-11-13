@@ -13,6 +13,7 @@ import '../model/event_data_source.dart';
 import '../services/http.dart';
 import '../services/sqlite.dart';
 import 'drawer_page.dart';
+import 'login_page.dart';
 
 // 主頁面
 class MainPage extends StatefulWidget {
@@ -30,11 +31,10 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
-    Sqlite.dropDatabase(); // 清空 sqlite 資料庫
-    // getCalendarDateJourney();
-    getCalendarDateEvent();
-
     super.initState();
+    Sqlite.dropDatabase(); // 清空 sqlite 資料庫
+    getCalendarDateJourney();
+    // getCalendarDateEvent();
   }
 
   @override
@@ -58,13 +58,13 @@ class _MainPageState extends State<MainPage> {
       ));
     }
 
-    // for (final event in eventlist) {
-    //   appointments.add(Appointment(
-    //     startTime: event.eventBlockStartTime,
-    //     endTime: event.eventBlockEndTime,
-    //     subject: event.eventName,
-    //   ));
-    // }
+    for (final event in eventlist) {
+      appointments.add(Appointment(
+        startTime: event.eventBlockStartTime,
+        endTime: event.eventBlockEndTime,
+        subject: event.eventName,
+      ));
+    }
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -113,14 +113,16 @@ class _MainPageState extends State<MainPage> {
 
   getCalendarDateJourney() async {
     // 從server抓使用者行事曆資料
-    var userID = {'uid': '1'}; //到時候要改成登入的使用者
+
+    var userMall = {'uID': FirebaseEmail}; //到時候要改成登入的使用者
 
     final result = await APIservice.selectJourneyAll(
-        content: userID, uID: '1'); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
+        content: userMall,
+        uID: FirebaseEmail!); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
     print(
         '------------------------------------------------------------------------------');
-    print("該 $userID 的資料: $result"); //，是一個陣列 [{}, {}, {}]
-    // print(result.length);
+    print("該 $FirebaseEmail 的資料: $result"); //，是一個陣列 [{}, {}, {}]
+
     print(
         '------------------------------------------------------------------------------');
     // print(result[0]); // 是一個 {}，裡面有很多個 key:value ，{jID: 42, uID: 12345, journeyName: wally, journeyStartTime: 202308141556, journeyEndTime: 202308141756, isAllDay: 0, location: qqq, remindStatus: 1, remindTime: 0, remark: qqq, color: 4278190080}
@@ -133,10 +135,10 @@ class _MainPageState extends State<MainPage> {
           .map((e) => Journey.fromMap(e))
           .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
     });
-    // for (var element in queryCalendarTable) {
-    //   print('-----element-----');
-    //   print(element);
-    // }
+    for (var element in queryCalendarTable) {
+      print('-----element-----');
+      print(element);
+    }
     // --------------------------------------
 
     // print('-----evenTest-----');
@@ -151,39 +153,28 @@ class _MainPageState extends State<MainPage> {
 
   getCalendarDateEvent() async {
     // 從server抓使用者行事曆資料
-    var userID = {'uid': 'wally'}; //到時候要改成登入的使用者
-
-    final result = await APIservice.selectEventAll(
-        content: userID, uID: 'wally'); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
+    var userMall = {'userMall': FirebaseEmail}; //到時候要改成登入的使用者
+    final result = await APIservice.selectHomeEventAll(
+        content: userMall,
+        userMall: FirebaseEmail!); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
     print(
         '------------------------------------------------------------------------------');
-    print("該 $userID 的資料: $result"); //，是一個陣列 [{}, {}, {}]
+    print("該 $userMall 的資料: $result"); //，是一個陣列 [{}, {}, {}]
     print(
         '------------------------------------------------------------------------------');
-    // print(result[0]); // 是一個 {}，裡面有很多個 key:value ，{jID: 42, uID: 12345, journeyName: wally, journeyStartTime: 202308141556, journeyEndTime: 202308141756, isAllDay: 0, location: qqq, remindStatus: 1, remindTime: 0, remark: qqq, color: 4278190080}
-    // await Sqlite.open; //開啟資料庫
-    // List? queryCalendarTable =
-    //     await Sqlite.queryAll(tableName: 'event'); // 從 sqlite 拿資料
-    // queryCalendarTable ??= []; // 如果沒有資料，就給一個空陣列
-    // setState(() {
-    //   eventlist = queryCalendarTable!
-    //       .map((e) => Event.fromMap(e))
-    //       .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
-    // });
-    // for (var element in queryCalendarTable) {
-    //   print('-----element-----');
-    //   print(element);
-    // }
-    // --------------------------------------
+    // print(result[
+    //     0]); // 是一個 {}，裡面有很多個 key:value ，{jID: 42, uID: 12345, journeyName: wally, journeyStartTime: 202308141556, journeyEndTime: 202308141756, isAllDay: 0, location: qqq, remindStatus: 1, remindTime: 0, remark: qqq, color: 4278190080}
+    await Sqlite.open; //開啟資料庫
+    List? queryCalendarTable =
+        await Sqlite.queryAll(tableName: 'event'); // 從 sqlite 拿資料
+    queryCalendarTable ??= []; // 如果沒有資料，就給一個空陣列
+    setState(() {
+      eventlist = queryCalendarTable!
+          .map((e) => Event.fromMap(e))
+          .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
+    });
 
-    // print('-----evenTest-----');
-    // print(journeylist); // 是一個 List<Event>，裡面有很多個 Event 物件
-    // for (var event in journeylist) {
-    //   print('-----event-----');
-    //   print(event.journeyName); // 印出 Event 物件的 journeyName
-    // }
-
-    // return queryCalendarTable;
+    return queryCalendarTable;
   }
 }
 

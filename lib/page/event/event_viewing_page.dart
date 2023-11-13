@@ -12,14 +12,18 @@ import 'package:create_event2/model/event.dart';
 import 'package:get/get.dart';
 
 import '../../model/friend.dart';
+import '../../services/http.dart';
+import '../login_page.dart';
 
 class EventViewingPage extends StatelessWidget {
   final Event event;
   final bool isMatched = true; // 是否匹配 (這裡會接收後端確認是否有媒合成功)
+  final bool show; // 新增参数来控制是否显示时间
 
   const EventViewingPage({
     Key? key,
     required this.event,
+    this.show = true, // 默认为 true
   }) : super(key: key);
 
   @override
@@ -81,12 +85,7 @@ class EventViewingPage extends StatelessWidget {
               const SizedBox(
                 height: 24,
               ),
-              const SizedBox(
-                height: 24,
-              ),
-              const SizedBox(
-                height: 24,
-              ),
+              buildDeadline(event.matchTime), //媒合開始時間
               buildNotification(event, event.remindStatus) //提醒
             ],
           ),
@@ -159,6 +158,9 @@ class EventViewingPage extends StatelessWidget {
               const SizedBox(
                 height: 24,
               ),
+              const SizedBox(
+                height: 24,
+              ),
               buildNotification(event, event.remindStatus) //提醒
             ],
           ),
@@ -169,6 +171,10 @@ class EventViewingPage extends StatelessWidget {
 
   // 截止時間
   Widget buildDeadline(DateTime deadline) {
+    if (show) {
+      return SizedBox.shrink(); // 如果 show 為 true，則返回一個空的 SizedBox
+    }
+
     final dateFormatter = DateFormat('E, d MMM yyyy HH:mm');
     final dateString = dateFormatter.format(deadline);
 
@@ -212,6 +218,10 @@ class EventViewingPage extends StatelessWidget {
 
 // 從後端媒合的正確時間
   Widget buildConfirmationTime(Event event) {
+    if (!show) {
+      return SizedBox.shrink(); // 如果 show 為 false，則返回一個空的 SizedBox
+    }
+
     return Column(
       children: [
         buildConfirmationDate(
@@ -292,8 +302,8 @@ class EventViewingPage extends StatelessWidget {
   }
 
   Widget buildDurationLength(Event event) {
-    final startHour = event.timeLengtHours;
-    final startMinute = event.timeLengthMins;
+    final startHour = event.timeLengthHours;
+    // final startMinute = event.timeLengthMins;
 
     return Row(
       children: <Widget>[
@@ -303,10 +313,10 @@ class EventViewingPage extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
-        Text(
-          '$startHour 小時 $startMinute 分鐘',
-          style: TextStyle(fontSize: 18),
-        )
+        // Text(
+        //   '$startHour 小時 $startMinute 分鐘',
+        //   style: TextStyle(fontSize: 18),
+        // )
       ],
     );
   }
@@ -348,7 +358,7 @@ class EventViewingPage extends StatelessWidget {
   }
 
   Widget buildNotification(Event event, bool notification) {
-    if (event.remindStatus == 1) {
+    if (event.remindStatus) {
       return Row(
         children: [
           Icon(Icons.alarm),
@@ -359,7 +369,7 @@ class EventViewingPage extends StatelessWidget {
             '提醒：',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          Text(notification != 0 ? '$notification 分鐘' : '時間到提醒',
+          Text(notification != true ? '$notification 分鐘' : '時間到提醒',
               style: TextStyle(fontSize: 18))
         ],
       );
@@ -384,15 +394,6 @@ class EventViewingPage extends StatelessWidget {
   List<Widget> buildViewingActions(BuildContext context, Event event) {
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
 
-    // final FirebaseAuth _auth = FirebaseAuth.instance;
-    // final User? user = _auth.currentUser;
-    // final currentUserUid = user?.uid ?? ''; //當前用戶的uid
-
-    // // 檢查是否為創建者
-    // if (currentUserUid != event.Uid) { //跟活動創建者去比較
-    //   return [];  // 如果不是都不顯示
-    // }
-
     return [
       IconButton(
         icon: Icon(Icons.edit, color: Colors.black),
@@ -410,34 +411,46 @@ class EventViewingPage extends StatelessWidget {
       ),
       IconButton(
         icon: Icon(Icons.delete, color: Colors.black),
-        onPressed: () {
-          showDialog(
+        onPressed: () async {
+          // 显示确认删除的对话框
+          final confirmDelete = await showDialog<bool>(
             context: context,
             builder: (BuildContext context) => AlertDialog(
-              icon: Text('確認刪除'),
-              content: Text('確定要刪除這個活動嗎？'),
-              actions: [
+              title: Text('確認删除'),
+              content: Text('确定要刪除這個活動嗎？'),
+              actions: <Widget>[
                 TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: () => Navigator.of(context).pop(false),
                   child: Text('取消'),
                 ),
                 TextButton(
-                  onPressed: () {
-                    eventProvider.deleteEvent(event);
-                    //回到主畫面
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/MyBottomBar2',
-                      ModalRoute.withName('/'),
-                    );
-                  },
+                  onPressed: () => Navigator.of(context).pop(true),
                   child: Text('確定'),
                 ),
               ],
             ),
           );
+
+          if (confirmDelete == true) {
+            await APIservice.deleteEvent(
+                content: {'userMall': FirebaseEmail},
+                eID: event.eID.toString());
+
+            eventProvider.deleteEvent(event);
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('活動已刪除'),
+              ),
+            );
+
+            // 返回到活动列表页面
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/MyBottomBar2',
+              ModalRoute.withName('/'),
+            );
+          }
         },
       ),
     ];

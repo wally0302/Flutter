@@ -1,4 +1,4 @@
-// 新增活動頁面
+// 新增活動頁面 & 編輯活動頁面
 
 // ignore_for_file: prefer_const_constructors
 
@@ -6,6 +6,7 @@ import 'package:create_event2/model/event.dart';
 import 'package:create_event2/page/event/event_page.dart';
 import 'package:create_event2/provider/event_provider.dart';
 import 'package:create_event2/utils.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../model/friend.dart';
 import '../../services/http.dart';
+import '../login_page.dart';
 
 class EventEditingPage extends StatefulWidget {
   final Event? event;
@@ -42,7 +44,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
   late DateTime eventTime; // 活動預計開始時間
   //活動預計時間長度
   late int selectedHours = 1; // 初始小時數為 1 小時
-  late int selectedDuration = 0; // 初始時間長度為 60 分鐘
+
   final locationController = TextEditingController(); //地點
   final remarkController = TextEditingController(); //備註
   List<Friend> invitedFriends = []; // 邀請的好友
@@ -103,14 +105,14 @@ class _EventEditingPageState extends State<EventEditingPage> {
       // 編輯活動
     } else {
       final event = widget.event!;
+      final eID = event.eID;
       titleController.text = event.eventName;
       fromDate = event.eventBlockStartTime;
       toDate = event.eventBlockEndTime;
       matchTime = event.matchTime;
       eventTime = event.eventTime; //活動預計開始時間
       invitedFriends = event.friends as List<Friend>;
-      selectedHours = event.timeLengtHours;
-      selectedDuration = event.timeLengthMins;
+      selectedHours = event.timeLengthHours;
 
       if (!event.location.isNotEmpty) {
         locationController.text = '';
@@ -182,7 +184,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
                   buildInvitedMembersField(),
                   buildDeadlinePicker(),
                   showEnableNotification(), //提醒
-                  if (enableNotification == 1)
+                  if (enableNotification)
                     buildNotificationField(
                         text: '提醒時間 ：', onClicked: showReminderDialog),
                 ],
@@ -249,18 +251,17 @@ class _EventEditingPageState extends State<EventEditingPage> {
   //輸入完成儲存資料
   Future saveForm() async {
     final isvalid = _formKey.currentState!.validate();
-    String uID = '12345';
-    // print('---------------------------');
+    String userMall = FirebaseEmail!;
+    print('eventTime: $eventTime');
     if (isvalid) {
       final event = Event(
-        // eid:eID,
-        uID: uID,
+        eID: widget.event?.eID ?? 0,
+        userMall: userMall,
         eventName: titleController.text,
         eventBlockStartTime: fromDate, //匹配起始日
         eventBlockEndTime: toDate,
         eventTime: eventTime, //活動預計開始時間
-        timeLengtHours: selectedHours, //活動預計時間長度
-        timeLengthMins: selectedDuration,
+        timeLengthHours: selectedHours, //活動預計時間長度
         eventFinalStartTime: DateTime.now(),
         eventFinalEndTime: DateTime.now(),
         state: 0,
@@ -273,9 +274,12 @@ class _EventEditingPageState extends State<EventEditingPage> {
       );
       final isEditing = widget.event != null;
       final provider = Provider.of<EventProvider>(context, listen: false);
-      print('uid: $uID');
       if (isEditing) {
-        provider.editEvent(event, widget.event!);
+        print('--編輯活動--');
+        print(event.eID.toString());
+        await APIservice.editEvent(
+            content: event.toMap(), eID: event.eID.toString());
+        print('編輯完成');
       } else {
         provider.addSortedEvent(event);
         final result =
@@ -472,22 +476,6 @@ class _EventEditingPageState extends State<EventEditingPage> {
             ),
           ),
           const Text(' 小時'),
-          const SizedBox(width: 16),
-          Container(
-            width: 60,
-            child: TextField(
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              controller:
-                  TextEditingController(text: selectedDuration.toString()),
-              onChanged: (value) {
-                setState(() {
-                  selectedDuration = int.tryParse(value) ?? selectedDuration;
-                });
-              },
-            ),
-          ),
-          const Text(' 分鐘'),
         ],
       ),
     );
@@ -620,9 +608,8 @@ class _EventEditingPageState extends State<EventEditingPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         trailing: Switch(
-          value: enableNotification == 1 ? true : false,
-          onChanged: (value) =>
-              setState(() => enableNotification = value ? true : false),
+          value: enableNotification,
+          onChanged: (value) => setState(() => enableNotification = value),
         ),
       );
 
@@ -841,7 +828,27 @@ class _EventEditingPageState extends State<EventEditingPage> {
                 ),
               ),
               onPressed: () {
-                showFriendListDialog(); // 打开好友列表对话框
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text('請輸入電子郵件'),
+                      content: TextField(
+                        onChanged: (value) {
+                          // Update the state
+                        },
+                      ),
+                      actions: <Widget>[
+                        TextButton(
+                          child: Text('確定'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
             )
           ],

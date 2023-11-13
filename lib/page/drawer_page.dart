@@ -50,7 +50,7 @@ class Drawer_Page extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => UserProfileEditPage()),
               );
             }),
-            buildItem('連結Google帳號', Icons.link, () {
+            buildItem('連結Googlfe帳號', Icons.link, () {
               print('連結Google帳號');
             }),
             buildItem('說明', Icons.help_outline, () {

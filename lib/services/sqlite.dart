@@ -36,7 +36,7 @@ class Sqlite {
     await db.execute('''
         CREATE TABLE $userTable (
         uID text,
-        userName text
+        userMall text
         );
       ''');
     print('建立使用者資料表');
@@ -70,19 +70,23 @@ class Sqlite {
     // 活動
     await db.execute('''
         CREATE TABLE $eventTable (
-        eID text,
-        uID text,
+        eID integer,
+        userMall text,
         eventName text,
-        event_First_Start_Time text,
-        event_First_End_Time text,
-        event_Final_Start_Time text,
-        event_Final_End_Time text,
-        state text,
-        matchmaking_End_Time text,
+        eventBlockStartTime int,
+        eventBlockEndTime int,
+        eventTime int,
+        timeLengthHours int,
+        timeLengthMins int,
+        eventFinalStartTime int,
+        eventFinalEndTime int,
+        state int,
+        matchTime int,
+        friends text,
         location text,
-        remindTime text,
-        remark text,
-        inviteLink text
+        remindStatus int,
+        remindTime int,
+        remark text
         );
       ''');
     print('建立活動資料表');
@@ -174,5 +178,32 @@ class Sqlite {
     final Database? database = await open;
     print("以清空 $tableName 資料表");
     return await database?.execute('DELETE FROM `$tableName`;');
+  }
+
+  // 新增用戶到 userTable
+  static Future<List> insertUser(String uid, String userMall) async {
+    Map<String, dynamic> userData = {
+      'uID': uid,
+      'userMall': userMall,
+    };
+
+    return await insert(tableName: userTable, insertData: userData);
+  }
+
+  // 查詢 usertable 中的用戶 userMall
+  static Future<String?> getUserUid() async {
+    final Database? database = await open;
+    try {
+      // 從 usertable 中取得所有資料
+      final List<Map<String, dynamic>>? results =
+          await database?.query(userTable);
+      if (results != null && results.isNotEmpty) {
+        // 由於 usertable 只存儲一個用戶的資料，所以我們直接返回第一條記錄的 uid
+        return results.first['userMall'] as String;
+      }
+    } catch (e) {
+      print('查詢 userMall 時出現錯誤: $e');
+    }
+    return null; // 如果沒有找到用戶資料，或者發生錯誤，返回 null
   }
 }

@@ -11,8 +11,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:create_event2/services/sqlite.dart';
 import 'package:create_event2/services/http.dart';
+import 'package:provider/provider.dart';
 
 import '../../model/journey.dart';
+import '../login_page.dart';
 
 class JourneyEditingPage extends StatefulWidget {
   final Journey? journey;
@@ -32,7 +34,6 @@ class JourneyEditingPage extends StatefulWidget {
 
 class _JourneyEditingPageState extends State<JourneyEditingPage> {
   final _formKey = GlobalKey<FormState>();
-
   late int jID;
   late String uID;
   final titleController = TextEditingController();
@@ -49,6 +50,7 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
   @override
   void initState() {
     super.initState();
+
     fromDate = DateTime.now();
     toDate = fromDate.add(Duration(hours: 2));
     //jID = widget.journey?.jid ?? 0;
@@ -639,7 +641,8 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
   Future saveForm() async {
     await Sqlite.initDatabase();
     final isvalid = _formKey.currentState!.validate();
-    String uID = '1';
+    String uID = FirebaseEmail!;
+
     if (isvalid) {
       final Journey journey = Journey(
           jID: jID,
