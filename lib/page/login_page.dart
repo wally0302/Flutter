@@ -1,7 +1,13 @@
 import 'package:create_event2/page/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../services/http.dart';
+import '../services/sqlite.dart';
 import 'main_page.dart';
+
+String? FirebaseID;
+String? FirebaseEmail;
 
 class LoginPage extends StatefulWidget {
   @override
@@ -137,7 +143,11 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // 如果登錄成功，則導航到名為 /MyBottomBar2 的頁面
   Future<void> _login() async {
+    //放置要跟 API 互動的程式碼
+    // print(_emailController.text); // print the email input
+    // print(_passwordController.text); // print the password input
     setState(() {
       emailError = _emailController.text.isEmpty ? '該欄位不能為空' : null;
       passwordError = _passwordController.text.isEmpty ? '該欄位不能為空' : null;
@@ -146,14 +156,23 @@ class _LoginPageState extends State<LoginPage> {
     if (emailError != null || passwordError != null) {
       return;
     }
-
     try {
       final user = await _auth.signInWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
       if (user != null) {
+        print('登入成功');
+        FirebaseID = user.user!.uid;
+        FirebaseEmail = user.user!.email;
+        print('loginFirebaseEmailFirebaseEmail: $FirebaseEmail');
+        print('loginFirebaseIDFirebaseID: $FirebaseID');
+
         Navigator.pushNamed(context, '/MyBottomBar2');
+        final result = APIservice.signIn(content: {
+          'uID': FirebaseID,
+          'userMall': FirebaseEmail,
+        });
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

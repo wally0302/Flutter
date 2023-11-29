@@ -9,9 +9,9 @@ import 'package:provider/provider.dart';
 import 'package:create_event2/model/journey.dart';
 import 'package:create_event2/model/event.dart';
 import 'package:create_event2/utils.dart';
-import 'package:create_event2/page/journey_viewing_page.dart';
+import 'package:create_event2/page/journey/journey_viewing_page.dart';
 
-import 'event_viewing_page.dart';
+import 'event/event_viewing_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);
@@ -209,11 +209,11 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(event.eventBlockStartTime)}',
+            '起始時間：${Utils.toDateTime(event.eventFinalStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(
-            '結束時間：${Utils.toDateTime(event.eventBlockEndTime)}',
+            '結束時間：${Utils.toDateTime(event.eventFinalEndTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],

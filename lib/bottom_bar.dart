@@ -1,13 +1,14 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:create_event2/page/event_page.dart';
+import 'package:create_event2/page/event/event_page.dart';
 import 'package:create_event2/page/main_page.dart';
+import 'package:create_event2/page/settind_page.dart';
 import 'package:flutter/material.dart';
 import 'package:create_event2/main.dart';
 
-import 'package:create_event2/page/journey_editing_page.dart';
+import 'package:create_event2/page/journey/journey_editing_page.dart';
 import 'package:create_event2/page/search_page.dart';
-import 'package:create_event2/page/event_editing_page.dart';
+import 'package:create_event2/page/event/event_editing_page.dart';
 import 'package:create_event2/page/friend_page.dart';
 
 class MyBottomBar extends StatefulWidget {
@@ -35,7 +36,7 @@ class _MyBottomBarState extends State<MyBottomBar> {
     ), //1
     MainPage(), //2
     SearchPage(), //3
-    Friend() //4
+    Setting_Page() //4
   ];
   // 點選buttom
   void _onItemTapped(int idx) {
@@ -68,7 +69,7 @@ class _MyBottomBarState extends State<MyBottomBar> {
                   _buildNavItem('行程', 1, 'assets/images/plus.png'),
                   _buildNavItem('主畫面', 2, 'assets/images/home.png'),
                   _buildNavItem('搜尋', 3, 'assets/images/search.png'),
-                  _buildNavItem('好友', 4, 'assets/images/users.png'),
+                  _buildNavItem('設定', 4, 'assets/images/settings.png'),
                 ],
               ),
             )

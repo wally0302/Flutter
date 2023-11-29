@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:create_event2/model/event.dart';
 import 'package:create_event2/model/friend.dart';
 
+import '../services/sqlite.dart';
+
 class EventProvider extends ChangeNotifier {
   final List<Event> _events = [];
 
@@ -88,5 +90,14 @@ class EventProvider extends ChangeNotifier {
         }
       }
     });
+  }
+
+  Future<void> fetchEventsFromDatabase() async {
+    final List<Map<String, dynamic>>? queryResult =
+        await Sqlite.queryAll(tableName: 'event');
+    _events.clear();
+    _events.addAll(queryResult!.map((e) => Event.fromMap(e)));
+    print('有拿到數據');
+    notifyListeners();
   }
 }

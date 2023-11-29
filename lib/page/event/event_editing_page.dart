@@ -1,21 +1,24 @@
-// 新增活動頁面
+// 新增活動頁面 & 編輯活動頁面
 
 // ignore_for_file: prefer_const_constructors
 
 import 'package:create_event2/model/event.dart';
-import 'package:create_event2/page/event_page.dart';
+import 'package:create_event2/page/event/event_page.dart';
 import 'package:create_event2/provider/event_provider.dart';
 import 'package:create_event2/utils.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:create_event2/page/event_viewing_page.dart';
+import 'package:create_event2/page/event/event_viewing_page.dart';
 // import 'package:get/get.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
-import '../model/friend.dart';
-import '../services/http.dart';
+import '../../bottom_bar.dart';
+import '../../model/friend.dart';
+import '../../services/http.dart';
+import '../login_page.dart';
 
 class EventEditingPage extends StatefulWidget {
   final Event? event;
@@ -42,50 +45,19 @@ class _EventEditingPageState extends State<EventEditingPage> {
   late DateTime eventTime; // 活動預計開始時間
   //活動預計時間長度
   late int selectedHours = 1; // 初始小時數為 1 小時
-  late int selectedDuration = 0; // 初始時間長度為 60 分鐘
+
+  final hourController = TextEditingController(); //活動預計時間長度
+
   final locationController = TextEditingController(); //地點
   final remarkController = TextEditingController(); //備註
   List<Friend> invitedFriends = []; // 邀請的好友
   late DateTime matchTime; // 媒合開始時間
-  int enableNotification = 0; //提醒是否開啟
+  bool enableNotification = false; //提醒是否開啟
+  TextEditingController emailController = TextEditingController();
+
   //--------------------------------------------------------//
 
   late int selectedValue;
-  List<Friend> backendFriends = [
-    // 好友列表 (後端)
-    Friend("Jack", false),
-    Friend("Wiily", false),
-    Friend("Julie", false),
-  ];
-
-  void showFriendListDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('選擇好友'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: backendFriends
-                .where((friend) =>
-                    !invitedFriends.contains(friend) && !friend.isSelected)
-                .map((friend) {
-              return ListTile(
-                title: Text(friend.name),
-                onTap: () {
-                  setState(() {
-                    friend.isSelected = true;
-                    invitedFriends.add(friend);
-                  });
-                  Navigator.of(context).pop();
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
 
   ValueNotifier<int> reminderMinutes = ValueNotifier<int>(0);
 
@@ -93,25 +65,26 @@ class _EventEditingPageState extends State<EventEditingPage> {
   void initState() {
     // 初始化
     super.initState();
-
+    // 設置活動預計開始時間，只包含小時，將分鐘設為 00
+    final now = DateTime.now();
+    eventTime = DateTime(now.year, now.month, now.day, now.hour);
     // 新增活動
     if (widget.event == null) {
       fromDate = widget.time!;
       toDate = widget.time!;
-      eventTime = DateTime.now(); //活動預計開始時間
+      eventTime = eventTime; //活動預計開始時間
       matchTime = DateTime.now(); // 媒合開始時間
       // 編輯活動
     } else {
       final event = widget.event!;
+      final eID = event.eID;
       titleController.text = event.eventName;
       fromDate = event.eventBlockStartTime;
       toDate = event.eventBlockEndTime;
       matchTime = event.matchTime;
       eventTime = event.eventTime; //活動預計開始時間
       invitedFriends = event.friends as List<Friend>;
-      selectedHours = event.timeLengtHours;
-      selectedDuration = event.timeLengthMins;
-
+      selectedHours = hourController.text as int;
       if (!event.location.isNotEmpty) {
         locationController.text = '';
       } else {
@@ -131,6 +104,8 @@ class _EventEditingPageState extends State<EventEditingPage> {
     titleController.dispose();
     locationController.dispose();
     remarkController.dispose();
+    hourController.dispose();
+    emailController.dispose();
     super.dispose();
   }
 
@@ -181,10 +156,10 @@ class _EventEditingPageState extends State<EventEditingPage> {
                   buildRemark(), //備註
                   buildInvitedMembersField(),
                   buildDeadlinePicker(),
-                  showEnableNotification(), //提醒
-                  if (enableNotification == 1)
-                    buildNotificationField(
-                        text: '提醒時間 ：', onClicked: showReminderDialog),
+                  // showEnableNotification(), //提醒
+                  // if (enableNotification)
+                  //   buildNotificationField(
+                  //       text: '提醒時間 ：', onClicked: showReminderDialog),
                 ],
               ),
             ),
@@ -208,7 +183,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
             isDefaultAction: true,
             onPressed: () {
               //返回上一頁
-              Navigator.pop(context);
+              Navigator.pop(context, true);
             },
             child: const Text('取消'),
           ),
@@ -249,17 +224,18 @@ class _EventEditingPageState extends State<EventEditingPage> {
   //輸入完成儲存資料
   Future saveForm() async {
     final isvalid = _formKey.currentState!.validate();
-    String uID = 'q';
+    String userMall = FirebaseEmail!;
+    final hours = int.tryParse(hourController.text) ?? 0;
+    print('eventTime: $eventTime');
     if (isvalid) {
       final event = Event(
-        // eid:eID,
-        uID: uID,
+        eID: widget.event?.eID ?? 0,
+        userMall: userMall,
         eventName: titleController.text,
         eventBlockStartTime: fromDate, //匹配起始日
         eventBlockEndTime: toDate,
         eventTime: eventTime, //活動預計開始時間
-        timeLengtHours: selectedHours, //活動預計時間長度
-        timeLengthMins: selectedDuration,
+        timeLengthHours: hours, //活動預計時間長度
         eventFinalStartTime: DateTime.now(),
         eventFinalEndTime: DateTime.now(),
         state: 0,
@@ -272,17 +248,27 @@ class _EventEditingPageState extends State<EventEditingPage> {
       );
       final isEditing = widget.event != null;
       final provider = Provider.of<EventProvider>(context, listen: false);
-
       if (isEditing) {
-        provider.editEvent(event, widget.event!);
+        print('--編輯活動--');
+        print(event.eID.toString());
+        await APIservice.editEvent(
+            content: event.toMap(), eID: event.eID.toString());
+        print('編輯完成');
       } else {
         provider.addSortedEvent(event);
+
         final result =
             await APIservice.addEvent(content: event.toMap()); //新增活動到資料庫
-        // print("新增活動到資料庫");
-        // print(result[1]);
+
+        print("新增活動到資料庫");
+        // print(event.toMap()); //印出要傳去給 server 的 json 資料
       }
-      Navigator.pop(context); // 返回上一頁
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MyBottomBar(i: 0), // 這裡的 0 代表 EventPage 的索引
+        ),
+      );
     }
   }
 
@@ -365,7 +351,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
 
   Widget buildBeginTime() {
     return buildHeader(
-      header: '活動預計開始時間 ',
+      header: '活動預計開始時間(以整點計算) ',
       child: Row(
         children: [
           Expanded(
@@ -462,7 +448,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
             child: TextField(
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              controller: TextEditingController(text: selectedHours.toString()),
+              controller: hourController,
               onChanged: (value) {
                 setState(() {
                   selectedHours = int.tryParse(value) ?? selectedHours;
@@ -471,22 +457,6 @@ class _EventEditingPageState extends State<EventEditingPage> {
             ),
           ),
           const Text(' 小時'),
-          const SizedBox(width: 16),
-          Container(
-            width: 60,
-            child: TextField(
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              controller:
-                  TextEditingController(text: selectedDuration.toString()),
-              onChanged: (value) {
-                setState(() {
-                  selectedDuration = int.tryParse(value) ?? selectedDuration;
-                });
-              },
-            ),
-          ),
-          const Text(' 分鐘'),
         ],
       ),
     );
@@ -619,9 +589,8 @@ class _EventEditingPageState extends State<EventEditingPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         trailing: Switch(
-          value: enableNotification == 1 ? true : false,
-          onChanged: (value) =>
-              setState(() => enableNotification = value ? 1 : 0),
+          value: enableNotification,
+          onChanged: (value) => setState(() => enableNotification = value),
         ),
       );
 
@@ -769,7 +738,7 @@ class _EventEditingPageState extends State<EventEditingPage> {
     required VoidCallback onClicked,
   }) =>
       ListTile(
-        title: Text(text),
+        title: Text(text, style: const TextStyle(fontSize: 16)),
         trailing: const Icon(Icons.arrow_drop_down),
         onTap: onClicked,
       );
@@ -794,53 +763,79 @@ class _EventEditingPageState extends State<EventEditingPage> {
         Row(
           children: [
             Text(
-              '參加好友 :',
+              '參加好友:',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             Expanded(
+              // 使用Expanded來確保剩餘空間被使用
               child: invitedFriends.isEmpty
                   ? Text('未選擇好友')
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: invitedFriends.map((friend) {
+                  : ListView.builder(
+                      // 使用ListView.builder來建立一個可滾動的列表
+                      shrinkWrap: true,
+                      itemCount: invitedFriends.length,
+                      itemBuilder: (context, index) {
+                        var friend = invitedFriends[index];
                         return Row(
                           children: [
-                            Text(friend.name),
+                            Flexible(
+                              child: Text(friend.name),
+                            ),
                             IconButton(
                               icon: Icon(Icons.clear),
                               onPressed: () {
                                 setState(() {
-                                  invitedFriends.remove(friend);
-                                  backendFriends
-                                      .firstWhere((backendFriend) =>
-                                          backendFriend.name == friend.name)
-                                      .isSelected = false;
+                                  invitedFriends.removeAt(index);
                                 });
                               },
                             ),
                           ],
                         );
-                      }).toList(),
+                      },
                     ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                primary: Color(0xFFCFE3F4), // 设置按钮的背景颜色
+                primary: Color(0xFFCFE3F4), // 設置按鈕的背景顏色
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30), // 设置按钮的圆角
+                  borderRadius: BorderRadius.circular(30), // 設置按鈕的圓角
                 ),
               ),
               child: Text(
                 "邀請",
                 style: TextStyle(
-                  color: Colors.black, // 设置文本颜色
-                  fontSize: 15, // 设置字体大小
-                  fontFamily: 'DFKai-SB', // 设置字体
-                  fontWeight: FontWeight.w600, // 设置字体粗细
+                  color: Colors.black, // 設置文本顏色
+                  fontSize: 15, // 設置字體大小
+                  fontFamily: 'DFKai-SB', // 設置字體
+                  fontWeight: FontWeight.w600, // 設置字體粗細
                 ),
               ),
               onPressed: () {
-                showFriendListDialog(); // 打开好友列表对话框
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text('請輸入電子郵件'),
+                      content: TextField(
+                        controller: emailController,
+                      ),
+                      actions: <Widget>[
+                        TextButton(
+                          child: Text('確定'),
+                          onPressed: () {
+                            setState(() {
+                              // 使用emailController.text來獲取輸入值並創建新朋友
+                              final newFriend = Friend(
+                                  emailController.text, emailController.text);
+                              invitedFriends.add(newFriend);
+                            });
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
             )
           ],
@@ -886,12 +881,17 @@ class _EventEditingPageState extends State<EventEditingPage> {
 
   // 選擇截止時間
   Future pickBeginDate({required bool pickDate}) async {
-    final date = await pickDateTime(eventTime, pickDate: pickDate);
+    final timeOfDay = await showTimePicker(
+        context: context, initialTime: TimeOfDay.fromDateTime(eventTime));
 
-    if (date == null) return;
+    if (timeOfDay == null) return null;
 
+    // 將分鐘數設為 00
+    final newTime = TimeOfDay(hour: timeOfDay.hour, minute: 0);
+    final newDateTime = DateTime(eventTime.year, eventTime.month, eventTime.day,
+        newTime.hour, newTime.minute);
     setState(() {
-      eventTime = date;
+      eventTime = newDateTime;
     });
   }
 }

@@ -1,18 +1,20 @@
-//"編輯" 和 "新增" 行程頁面
+// ignore_for_file: prefer_const_constructors, avoid_print
 
-// ignore_for_file: prefer_const_constructors
-
-import 'package:create_event2/model/journey.dart';
-import 'package:create_event2/provider/journey_provider.dart';
+import 'package:create_event2/model/event.dart';
+//import 'package:create_event2/provider/event_provider.dart';
 import 'package:create_event2/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:create_event2/page/journey_viewing_page.dart';
+//import 'package:provider/provider.dart';
+// import 'package:create_event2/page/event_viewing_page.dart';
 // import 'package:get/get.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:create_event2/services/sqlite.dart';
+import 'package:create_event2/services/http.dart';
+import 'package:provider/provider.dart';
 
-import '../services/http.dart';
+import '../../model/journey.dart';
+import '../login_page.dart';
 
 class JourneyEditingPage extends StatefulWidget {
   final Journey? journey;
@@ -32,8 +34,8 @@ class JourneyEditingPage extends StatefulWidget {
 
 class _JourneyEditingPageState extends State<JourneyEditingPage> {
   final _formKey = GlobalKey<FormState>();
-
-  int jID = 0;
+  late int jID;
+  late String userMall;
   final titleController = TextEditingController();
   late DateTime fromDate;
   late DateTime toDate;
@@ -47,48 +49,89 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
   ValueNotifier<int> reminderMinutes = ValueNotifier<int>(0);
   @override
   void initState() {
-    //初始化
     super.initState();
 
-    // 新增行程
+    fromDate = DateTime.now();
+    toDate = fromDate.add(Duration(hours: 2));
+    //jID = widget.journey?.jid ?? 0;
+    // 從新增行程
     if (widget.journey == null) {
       jID = 0;
-
       if (widget.addTodayDate == false) {
+        // false 點下方新增
         fromDate = widget.time!;
         toDate = fromDate.add(Duration(hours: 2));
         backgroundcolor = Colors.black;
       } else {
+        // addTodayDate為true，從顯示當天行程
         fromDate = widget.time!;
         toDate = fromDate.add(Duration(hours: 2));
         backgroundcolor = Colors.black;
       }
-
-      //如果傳入有 "journey" 就是 "編輯行程
     } else {
-      // 編輯行程
-      final journey = widget.journey!;
-
-      titleController.text = journey.journeyName;
-      fromDate = journey.journeyStartTime;
-      toDate = journey.journeyEndTime;
-      backgroundcolor = journey.color;
-
-      if (!journey.location.isNotEmpty) {
-        locationController.text = '';
-      } else {
-        locationController.text = journey.location;
-      }
-      if (!journey.remark.isNotEmpty) {
-        remarkController.text = '';
-      } else {
-        remarkController.text = journey.remark;
-      }
-      reminderMinutes.value = journey.remindTime;
-      enableNotification = journey.remindStatus;
-      isAllday = journey.isAllDay;
+      // 編輯
+      jID = widget.journey!.jID!;
+      userMall = widget.journey!.userMall!;
+      print('編輯印出jid:$jID');
+      fetchJourneyData();
     }
     selectedValue = reminderMinutes.value;
+  }
+
+  void fetchJourneyData() async {
+    final journey = await getJourneyDataFromDatabase(jID);
+    if (journey != null) {
+      setState(() {
+        titleController.text = journey.journeyName;
+        fromDate = journey.journeyStartTime;
+        toDate = journey.journeyEndTime;
+        backgroundcolor = journey.color;
+        locationController.text = journey.location;
+        remarkController.text = journey.remark;
+        reminderMinutes.value = journey.remindTime;
+        enableNotification = journey.remindStatus;
+        isAllday = journey.isAllDay;
+      });
+    } else {
+      // 根據 jid 沒有找到對應的事件，可以處理異常情況
+      print('沒找到資料');
+      return null;
+    }
+  }
+
+  Future<Journey?> getJourneyDataFromDatabase(int jid) async {
+    List<Map<String, dynamic>>? queryResult = await Sqlite.queryRow(
+        tableName: 'journey', key: 'jID', value: jid.toString());
+
+    if (queryResult != null && queryResult.isNotEmpty) {
+      Map<String, dynamic> journeyData = queryResult.first;
+      return Journey(
+          jID: journeyData['jID'],
+          userMall: journeyData['userMall'],
+          journeyName: journeyData['journeyName'],
+          journeyStartTime: DateTime(
+              journeyData['journeyStartTime'] ~/ 100000000, // 年
+              (journeyData['journeyStartTime'] % 100000000) ~/ 1000000, // 月
+              (journeyData['journeyStartTime'] % 1000000) ~/ 10000, // 日
+              (journeyData['journeyStartTime'] % 10000) ~/ 100, // 小时
+              journeyData['journeyStartTime'] % 100 // 分钟
+              ),
+          journeyEndTime: DateTime(
+              journeyData['journeyEndTime'] ~/ 100000000, // 年
+              (journeyData['journeyEndTime'] % 100000000) ~/ 1000000, // 月
+              (journeyData['journeyEndTime'] % 1000000) ~/ 10000, // 日
+              (journeyData['journeyEndTime'] % 10000) ~/ 100, // 小时
+              journeyData['journeyEndTime'] % 100 // 分钟
+              ),
+          color: Color(journeyData['color']),
+          location: journeyData['location'],
+          remark: journeyData['remark'],
+          remindTime: journeyData['remindTime'],
+          remindStatus: journeyData['remindStatus'] == 1,
+          isAllDay: journeyData['isAllday'] == 1);
+    } else {
+      return null;
+    }
   }
 
   @override
@@ -103,12 +146,11 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.journey == null ? '新增行程' : '編輯行程',
-          style: TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Color(0xFF4A7DAB),
-        //左上 X 按鈕
+        title: Text(widget.journey == null ? '新增行程' : '編輯行程',
+            style: TextStyle(color: Colors.black)),
+        centerTitle: true, //標題置中
+        backgroundColor: Color(0xFF4A7DAB), // 這裡設置 AppBar 的顏色
+
         leading: CloseButton(
           color: Colors.black,
           onPressed: () {
@@ -116,49 +158,44 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
             showDialogWidget();
           },
         ),
-        //右上儲存按鈕
         actions: buildEditingActions(),
       ),
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/back.png'),
-                fit: BoxFit.cover, // 使用 BoxFit.cover 讓圖片覆蓋整個 Container
-              ),
+      body: Container(
+        width: double.infinity, // 確保寬度填滿
+        height: double.infinity, // 確保高度填滿
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/back.png"), // 圖片路徑
+            fit: BoxFit.cover, // 確保圖片填滿容器
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                buildTitle(),
+                const SizedBox(height: 12),
+                buildIsAllDaySwitch(),
+                buildDateTimePickers(),
+                buildColorPicker(context),
+                buildLocation(),
+                buildRemark(),
+                showEnableNotification(),
+                if (enableNotification)
+                  buildNotificationField(
+                      text: '提醒時間 ：', onClicked: showReminderDialog),
+              ],
             ),
           ),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(12),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  buildTitle(), //標題
-                  const SizedBox(
-                    height: 12,
-                  ),
-                  buildIsAllDaySwitch(), //整天
-                  buildDateTimePickers(), //起始結束時間
-                  buildColorPicker(context), //背景顏色
-                  buildLocation(), //地點
-                  buildRemark(), //備註
-                  showEnableNotification(), //提醒
-                  if (enableNotification)
-                    buildNotificationField(
-                        text: '提醒時間 ：', onClicked: showReminderDialog),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  //提示框 (是否要取消編輯)
+  //提示框
   void showDialogWidget() {
     showCupertinoModalPopup<void>(
       context: context,
@@ -169,25 +206,21 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
         ),
         content: const Text('取消編輯將不儲存\n是否要返回?'),
         actions: <CupertinoDialogAction>[
-          //取消按鈕
           CupertinoDialogAction(
             isDefaultAction: true,
             onPressed: () {
-              //返回上一頁
               Navigator.pop(context);
             },
             child: const Text('取消'),
           ),
-          //確認按鈕
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: () {
               Navigator.pushNamedAndRemoveUntil(
-                // 返回到主畫面並移除其它route
                 context,
                 '/MyBottomBar2',
                 ModalRoute.withName('/'),
-              );
+              ); // 返回到主畫面並移除其它route
             },
             child: const Text('確認'),
           ),
@@ -196,7 +229,7 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
     );
   }
 
-  // 儲存按鈕
+  // 儲存buttom
   List<Widget> buildEditingActions() => [
         ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
@@ -204,61 +237,10 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
               primary: Colors.transparent,
               shadowColor: Colors.transparent,
             ),
-            onPressed: saveForm, //儲存資料
+            onPressed: saveForm,
             icon: const Icon(Icons.done, color: Colors.black),
             label: const Text('儲存', style: TextStyle(color: Colors.black))),
       ];
-
-  //輸入完成儲存資料
-  Future saveForm() async {
-    final isvalid = _formKey.currentState!.validate();
-    String uID = 'q';
-    if (isvalid) {
-      final journey = Journey(
-        uID: uID,
-        journeyName: titleController.text,
-        journeyStartTime: fromDate,
-        journeyEndTime: toDate,
-        isAllDay: isAllday,
-        location: locationController.text,
-        remindStatus: enableNotification,
-        remindTime: reminderMinutes.value,
-        remark: remarkController.text,
-        color: backgroundcolor,
-      );
-      final isEditing = widget.journey != null;
-      final provider = Provider.of<JourneyProvider>(context, listen: false);
-
-      //編輯行程
-
-      if (isEditing) {
-        provider.editJourney(journey, widget.journey!);
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) =>
-                JourneyViewingPage(journey: journey), //回到行程詳細資料頁面
-          ),
-        );
-        print('編輯成功');
-        print(journey);
-
-        //新增行程
-      } else {
-        provider.addJourney(journey);
-        final result =
-            await APIservice.addJourney(content: journey.toMap()); //新增行程到資料庫
-        print("新增行程到資料庫");
-        print(journey.journeyStartTime);
-        print(result[1]);
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/MyBottomBar2', //回到主頁面
-          ModalRoute.withName('/'),
-        );
-      }
-    }
-  }
-
   // 建立標題
   Widget buildTitle() {
     return Row(
@@ -276,7 +258,6 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
             ),
             onFieldSubmitted: (_) => {},
             validator: (title) => title != null && title.isEmpty
-                //紅色警告
                 ? 'Title can not be empty'
                 : null,
             controller: titleController,
@@ -301,7 +282,6 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
           buildTo(),
         ],
       );
-
   Widget buildFrom() {
     if (isAllday) {
       return buildHeader(
@@ -539,7 +519,6 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
     );
   }
 
-//確保使用者填寫時間是正確的
   Future pickFromDateTime({required bool pickDate}) async {
     final date = await pickDateTime(fromDate, pickDate: pickDate);
 
@@ -671,4 +650,66 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
           child,
         ],
       );
+  //輸入完成儲存資料
+  Future saveForm() async {
+    await Sqlite.initDatabase();
+    final isvalid = _formKey.currentState!.validate();
+    String userMall = FirebaseEmail!;
+
+    if (isvalid) {
+      final Journey journey = Journey(
+          jID: jID,
+          userMall: userMall,
+          journeyName: titleController.text,
+          location: locationController.text,
+          journeyStartTime: fromDate,
+          journeyEndTime: toDate,
+          color: backgroundcolor,
+          remark: remarkController.text,
+          remindTime: reminderMinutes.value,
+          remindStatus: enableNotification,
+          isAllDay: isAllday);
+      final isEditing = widget.journey != null;
+      // final provider = Provider.of<JourneyProvider>(context, listen: false);
+      //編輯行程
+      if (isEditing) {
+        // provider.editJourney(journey, widget.journey!);
+        await Sqlite.update(
+            tableName: 'journey',
+            updateData: journey.toMap(),
+            tableIdName: 'jid',
+            updateID: jID);
+        final result = await APIservice.editJourney(
+            content: journey.toMap(), jID: journey.jID!);
+
+        if (result[0]) {
+          print('編輯成功');
+          Navigator.of(context).pop(journey);
+        } else {
+          print('在server編輯行程失敗');
+        }
+
+        //新增行程
+      } else {
+        // provider.addJourney(journey);
+        await Sqlite.insert(tableName: 'journey', insertData: journey.toMap());
+        final result = await APIservice.addJourney(content: journey.toMap());
+        print(result[0]);
+        if (result[0]) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/MyBottomBar2',
+            ModalRoute.withName('/'),
+          );
+        } else {
+          print('$result 在 server 新增活動失敗');
+        }
+        // Navigator.pushNamedAndRemoveUntil(
+        //   context,
+        //   '/MyBottomBar2',
+        //   ModalRoute.withName('/'),
+        // );
+      }
+    }
+  }
 }
