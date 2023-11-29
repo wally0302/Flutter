@@ -3,6 +3,8 @@
 // import 'package:create_event2/page/event_viewing_page.dart';
 // ignore_for_file: prefer_const_constructors
 
+import 'package:create_event2/page/chat/chat_page.dart';
+import 'package:create_event2/page/chat/chatlist.dart';
 import 'package:create_event2/page/chat_room_page.dart';
 import 'package:create_event2/page/event/event_page.dart';
 import 'package:create_event2/page/vote/vote_page.dart';
@@ -70,8 +72,8 @@ class MyApp extends StatelessWidget {
         '/MyBottomBar3': ((context) => const MyBottomBar(i: 3)),
         '/MyBottomBar4': ((context) => const MyBottomBar(i: 4)),
         '/login': ((context) => LoginPage()),
-        '/vote': ((context) => VotePage()),
-        '/chat': ((context) => ChatRoomPage()),
+        // '/vote': ((context) => VotePage()),
+        // '/chat': ((context) => ChatPage()),
         '/eventpage': ((context) => EventPage()),
       },
       title: title,

@@ -52,6 +52,9 @@ dependencies:
   cupertino_icons: ^1.0.2
   uuid: ^3.0.4
   cron: ^0.5.1
+  socket_io_client: ^2.0.3+1
+  flutter_svg: ^2.0.7
+  swipe_to: 1.0.2
 
 dev_dependencies:
   flutter_test:

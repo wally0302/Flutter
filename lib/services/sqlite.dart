@@ -35,7 +35,6 @@ class Sqlite {
     // 會員
     await db.execute('''
         CREATE TABLE $userTable (
-        uID text,
         userMall text
         );
       ''');
@@ -43,18 +42,18 @@ class Sqlite {
     await db.execute('''
         CREATE TABLE $friendTable (
         fID integer primary key AUTOINCREMENT,
-        uID integer,
+        userMall integer,
         account text,
         name text
         );
       ''');
     print('建立好友資料表');
     // 行程
-    // uID integer 有需要?
+    // userMall integer 有需要?
     await db.execute('''
         CREATE TABLE $journeyTable (
           jID integer,
-          uID text,
+          userMall text,
           journeyName text,
           journeyStartTime int,
           journeyEndTime int,
@@ -183,7 +182,7 @@ class Sqlite {
   // 新增用戶到 userTable
   static Future<List> insertUser(String uid, String userMall) async {
     Map<String, dynamic> userData = {
-      'uID': uid,
+      'userMall': uid,
       'userMall': userMall,
     };
 

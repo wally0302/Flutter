@@ -23,10 +23,10 @@ class Event {
   //-------------------------------------------
   //後端會回傳給前端的資料
   final int state; //1:已完成媒合 0:未完成媒合
-  final DateTime eventFinalStartTime; //最終確定時間 年月日時分
-  final DateTime eventFinalEndTime;
+  DateTime eventFinalStartTime; //最終確定時間 年月日時分
+  DateTime eventFinalEndTime;
 
-  const Event({
+  Event({
     this.eID,
     this.userMall,
     required this.eventName,
@@ -50,29 +50,20 @@ class Event {
 
   get date => null;
 
-  //轉換成 json 格式，存進 sqlite
+  //將 flutter 資料轉換成 json 格式，然後存進資料庫
   Map<String, dynamic> toMap() {
     return {
       'eID': eID,
       'userMall': userMall,
       'eventName': eventName,
       // 將 DateTime 轉換為自定義的整數格式
-      'eventBlockStartTime': eventBlockStartTime.year * 100000000 +
-          eventBlockStartTime.month * 1000000 +
-          eventBlockStartTime.day * 10000 +
-          eventBlockStartTime.hour * 100 +
-          eventBlockStartTime.minute,
-      'eventBlockEndTime': eventBlockEndTime.year * 100000000 +
-          eventBlockEndTime.month * 1000000 +
-          eventBlockEndTime.day * 10000 +
-          eventBlockEndTime.hour * 100 +
-          eventBlockEndTime.minute,
-      // 活動預計開始時間，如果是 DateTime，也需要轉換
-      'eventTime': eventTime.year * 100000000 +
-          eventTime.month * 1000000 +
-          eventTime.day * 10000 +
-          eventTime.hour * 100 +
-          eventTime.minute,
+      'eventBlockStartTime': eventBlockStartTime.year * 10000 +
+          eventBlockStartTime.month * 100 +
+          eventBlockStartTime.day,
+      'eventBlockEndTime': eventBlockEndTime.year * 10000 +
+          eventBlockEndTime.month * 100 +
+          eventBlockEndTime.day,
+      'eventTime': eventTime.hour * 100 + eventTime.minute,
       'timeLengthHours': timeLengthHours,
       'location': location,
       'remark': remark,
@@ -205,5 +196,30 @@ class Event {
       eventFinalStartTime: eventFinalStartTime,
       eventFinalEndTime: eventFinalEndTime,
     );
+  }
+  void updateWithNewData(Map<String, dynamic> newData) {
+    // 您可以根据实际需要更新更多的字段
+    // 这里仅示例更新最終開始和結束時間
+    if (newData.containsKey('eventFinalStartTime')) {
+      int eventFinalStartTimeInt = newData['eventFinalStartTime'];
+      eventFinalStartTime = DateTime(
+          eventFinalStartTimeInt ~/ 100000000, // 年
+          (eventFinalStartTimeInt % 100000000) ~/ 1000000, // 月
+          (eventFinalStartTimeInt % 1000000) ~/ 10000, // 日
+          (eventFinalStartTimeInt % 10000) ~/ 100, // 小时
+          eventFinalStartTimeInt % 100 // 分钟
+          );
+    }
+    if (newData.containsKey('eventFinalEndTime')) {
+      int eventFinalEndTimeInt = newData['eventFinalEndTime'];
+      eventFinalEndTime = DateTime(
+          eventFinalEndTimeInt ~/ 100000000, // 年
+          (eventFinalEndTimeInt % 100000000) ~/ 1000000, // 月
+          (eventFinalEndTimeInt % 1000000) ~/ 10000, // 日
+          (eventFinalEndTimeInt % 10000) ~/ 100, // 小时
+          eventFinalEndTimeInt % 100 // 分钟
+          );
+    }
+    // 根据需要添加其他字段的更新
   }
 }

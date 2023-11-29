@@ -10,7 +10,7 @@ import '../model/friend.dart';
 import '../model/journey.dart';
 
 class APIservice {
-  // 將 uID & userMall  傳給 server
+  // 將 userMall & userMall  傳給 server
   static Future<List<dynamic>> signIn(
       {required Map<String, dynamic> content}) async {
     final url = Uri.parse("http://163.22.17.145:3000/api/user/signUp");
@@ -90,10 +90,10 @@ class APIservice {
 
   // 抓使用者行事曆所有的 journey ，還會把資料存入 sqlite  ok
   static Future<List<dynamic>> selectJourneyAll(
-      {required Map<String, dynamic> content, required String uID}) async {
-    final url =
-        Uri.parse("http://163.22.17.145:3000/api/journey/getAllJourney/$uID");
-    await Sqlite.clear(tableName: "journey"); // 清空資料表
+      {required Map<String, dynamic> content, required String userMall}) async {
+    final url = Uri.parse(
+        "http://163.22.17.145:3000/api/journey/getAllJourney/$userMall");
+    // await Sqlite.clear(tableName: "journey"); // 清空資料表
     final response = await http.post(
       url,
       headers: <String, String>{'Content-Type': 'application/json'},
@@ -110,7 +110,7 @@ class APIservice {
         int journeyEndTimeInt = journey['journeyEndTime'];
         final Journey newJourneyData = Journey(
             jID: journey['jID'],
-            uID: journey['uID'],
+            userMall: journey['userMall'],
             journeyName: journey['journeyName'].toString(),
             journeyStartTime: DateTime(
                 //2023-11-05 12:42:00.000
@@ -232,7 +232,6 @@ class APIservice {
               ),
           //活動預計時間長度
           timeLengthHours: timeLengthHoursInt,
-          // timeLengthMins: timeLengthMinsInt,
           //地點
           location: event['location'],
           //備註
@@ -279,6 +278,7 @@ class APIservice {
         );
 
         // print('---newEventData---');
+        // print(newEventData);
         // //要取得時間後面再加上 .day .hour .minute
         // print(newEventData.eventBlockStartTime.day);
         // print(newEventData.eventBlockEndTime.hour);
@@ -287,11 +287,11 @@ class APIservice {
             tableName: 'event',
             insertData: newEventData.toMap()); // 將資料存入本地端資料庫
       }
-      print('完成 刷新 sqlite 行程資料表');
+      print('完成 刷新 sqlite home行程資料表');
+      // print('serverEvent $serverEvent');
       return serverEvent;
     } else {
-      print('失敗 刷新 sqlite 行程資料表');
-      print('失敗 $serverEvent response.statusCode ${response.statusCode}');
+      print('失敗 刷新 sqlite home行程資料表');
       return serverEvent;
     }
   }
@@ -312,7 +312,6 @@ class APIservice {
     final serverGuestEvent = jsonDecode(response.body); //是一個 List<dynamic>
     print('---serverGuestEvent---');
     print(serverGuestEvent);
-
     if (response.statusCode == 200 || response.statusCode == 400) {
       for (var event in serverGuestEvent) {
         int eventBlockStartTimeInt = event['eventBlockStartTime'];
@@ -406,30 +405,47 @@ class APIservice {
               ),
         );
 
-        // print('---newEventData---');
         // //要取得時間後面再加上 .day .hour .minute
         // print(newEventData.eventBlockStartTime.day);
         // print(newEventData.eventBlockEndTime.hour);
-
-        // Sqlite.insert(
-        //     tableName: 'event',
-        //     insertData: newEventData.toMap()); // 將資料存入本地端資料庫
+        Sqlite.insert(
+            tableName: 'event',
+            insertData: newEventData.toMap()); // 將資料存入本地端資料庫
       }
-      print('完成 刷新 sqlite 行程資料表');
+      print('完成 刷新 sqlite guest行程資料表');
       return serverGuestEvent;
     } else {
-      print('失敗 刷新 sqlite 行程資料表');
-      print('失敗 $serverGuestEvent response.statusCode ${response.statusCode}');
-      return serverGuestEvent;
+      print('失敗 刷新 sqlite guest行程資料表');
+      return [];
     }
   }
 
-  //刪除活動 透過 eid 刪除
-  static Future<List<dynamic>> deleteEvent(
+  //房主刪除活動 透過 eid 刪除
+  static Future<List<dynamic>> deleteHomeEvent(
       {required Map<String, dynamic> content, required String eID}) async {
     final url =
         Uri.parse("http://163.22.17.145:3000/api/event/deleteEvent/$eID");
     final response = await http.delete(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      return [true, responseString];
+    } else {
+      return [false, response];
+    }
+  }
+
+  //客人刪除活動 透過 eid & mail  刪除
+  static Future<List<dynamic>> deleteGuestEvent(
+      {required Map<String, dynamic> content,
+      required String eID,
+      required String userMall}) async {
+    final url = Uri.parse(
+        "http://163.22.17.145:3000/api/event/deleteMyselfFromEvent/$eID/$userMall");
+    final response = await http.post(
       url,
       headers: <String, String>{'Content-Type': 'application/json'},
       body: jsonEncode(content),
@@ -454,6 +470,283 @@ class APIservice {
 
     if (response.statusCode == 200 || response.statusCode == 400) {
       print('編輯活動成功');
+      return [true, response];
+    } else {
+      print(response);
+      return [false, response];
+    }
+  }
+
+  ////////////////////// 投票(vote) //////////////////////
+  // 新增投票
+  static Future<List<dynamic>> addVote(
+      {required Map<String, dynamic> content}) async {
+    final url = Uri.parse("http://163.22.17.145:3000/api/vote/insertVote/");
+
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      return [true, responseString];
+    } else {
+      return [false, response];
+    }
+  }
+
+  // 新增投票選項
+  static Future<List<dynamic>> addVoteOptions(
+      {required Map<String, dynamic> content}) async {
+    final url = Uri.parse(
+        "http://163.22.17.145:3000/api/votingOption/insertVotingOption/");
+
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      return [true, responseString];
+    } else {
+      return [false, response];
+    }
+  }
+
+  // 新增投票結果
+  static Future<List<dynamic>> addVoteResult(
+      {required Map<String, dynamic> content}) async {
+    final url = Uri.parse("http://163.22.17.145:3000/api/result/insertResult/");
+
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('新增投票結果成功');
+      return [true, responseString];
+    } else {
+      print('新增投票結果失敗');
+      return [false, response];
+    }
+  }
+
+  // 刪除投票
+  static Future<List<dynamic>> deleteVote({required int vID}) async {
+    String url =
+        "http://163.22.17.145:3000/api/vote/deleteVote/$vID"; //api後接檔案名稱
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: <String, String>{'Content-Type': 'application/json'},
+    ); // 根據使用者的token新增資料
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('刪除投票成功');
+      return [true, responseString];
+    } else {
+      print(responseString);
+      return [false, responseString];
+    }
+  }
+
+  // 刪除投票選項
+  static Future<List<dynamic>> deleteVoteOptions({required int vID}) async {
+    String url =
+        "http://163.22.17.145:3000/api/votingOption/deleteVotingOption/$vID"; //api後接檔案名稱
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: <String, String>{'Content-Type': 'application/json'},
+      // body: jsonEncode(content),
+    ); // 根據使用者的token新增資料
+    final responseString = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('刪除投票選項成功');
+      return [true, responseString];
+    } else {
+      print(responseString);
+      return [false, responseString];
+    }
+  }
+
+  // 更新投票結果
+  static Future<List<dynamic>> updateResult(
+      {required Map<String, dynamic> content,
+      required int voteResultID}) async {
+    String url =
+        "http://163.22.17.145:3000/api/result/updateResult/$voteResultID"; //api後接檔案名稱
+    print("---------------SQL-------------");
+    print(content);
+    final response = await http.put(
+      Uri.parse(url),
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    ); // 根據使用者的token新增資料
+
+    print('API 返回的內容: ${response.body}'); // 添加這行
+    final responseString = response.body;
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('更改投票選項成功');
+      return [true, responseString];
+    } else {
+      print(responseString);
+      return [false, responseString];
+    }
+  }
+
+  // 計算投票總票數
+  static Future<List<dynamic>> countVote({required int oID}) async {
+    final url = Uri.parse("http://163.22.17.145:3000/api/result/count/$oID");
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      //body: jsonEncode(content),
+    );
+    final serverVote = jsonDecode(response.body);
+    print(serverVote);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('計算投票總票數成功');
+      return [true, serverVote];
+    } else {
+      print(serverVote);
+      print('計算投票總票數失敗');
+      return [false, serverVote];
+    }
+  }
+
+  // 抓全部投票列表
+  static Future<List<dynamic>> seletallVote({required int eID}) async {
+    final url = Uri.parse("http://163.22.17.145:3000/api/vote/getAllVote/$eID");
+    //await Sqlite.clear(tableName: "vote");
+
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      //body: jsonEncode(content),
+    );
+    final serverVote = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      // for (var vote in serverVote) {
+      //   int endTimeInt = vote['endTime'];
+      //   final Vote newVoteData = Vote(
+      //       vID: vote['vID'],
+      //       eID: vote['eID'],
+      //       userMall: vote['userMall'],
+      //       voteName: vote['voteName'].toString(),
+      //       endTime: DateTime(
+      //           endTimeInt ~/ 100000000, // 年
+      //           (endTimeInt % 100000000) ~/ 1000000, // 月
+      //           (endTimeInt % 1000000) ~/ 10000, // 日
+      //           (endTimeInt % 10000) ~/ 100, // 小时
+      //           endTimeInt % 100 // 分钟
+      //           ),
+      //       singleOrMultipleChoice: vote['isChecked'] == 1);
+      //   Sqlite.insert(tableName: 'vote', insertData: newVoteData.toMap());
+      // }
+      //   print('完成 刷新 sqlite 投票資料表');
+      //   return serverVote;
+      // } else {
+      //   print('失敗 刷新 sqlite 投票資料表');
+      //   print('失敗 $serverVote response.statusCode ${response.statusCode}');
+      //   return serverVote;
+      // }
+      print('抓取投票選項成功');
+      return [true, serverVote];
+    } else {
+      print(serverVote);
+      print('抓取投票選項失敗');
+      return [false, serverVote];
+    }
+  }
+
+  // 抓全部投票選項
+  static Future<List<dynamic>> seletallVoteOptions({required int vID}) async {
+    final url = Uri.parse(
+        "http://163.22.17.145:3000/api/votingOption/getAllVotingOption/$vID");
+
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      //body: jsonEncode(content),
+    );
+    final serverVote = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      // for (var vote in serverVote) {
+      //   int endTimeInt = vote['endTime'];
+      //   final Vote newVoteData = Vote(
+      //       vID: vote['vID'],
+      //       eID: vote['eID'],
+      //       uID: vote['uID'],
+      //       voteName: vote['voteName'].toString(),
+      //       endTime: DateTime(
+      //           endTimeInt ~/ 100000000, // 年
+      //           (endTimeInt % 100000000) ~/ 1000000, // 月
+      //           (endTimeInt % 1000000) ~/ 10000, // 日
+      //           (endTimeInt % 10000) ~/ 100, // 小时
+      //           endTimeInt % 100 // 分钟
+      //           ),
+      //       singleOrMultipleChoice: vote['isChecked'] == 1);
+      //   // Sqlite.insert(tableName: 'vote', insertData: newVoteData.toMap());
+      // }
+      print('抓取投票選項成功');
+      return [true, serverVote];
+    } else {
+      print(serverVote);
+      return [false, serverVote];
+    }
+  }
+
+  // 抓全部投票結果
+  static Future<List<dynamic>> seletallVoteResult(
+      {required int vID, required String userMall}) async {
+    final url = Uri.parse(
+        "http://163.22.17.145:3000/api/result/getAllResult/$vID/$userMall");
+    final response = await http.post(
+      url,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      //body: jsonEncode(content),
+    );
+    final serverVote = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      // for (var vote in serverVote) {
+      //   int endTimeInt = vote['endTime'];
+      //   final Vote newVoteData = Vote(
+      //       vID: vote['vID'],
+      //       eID: vote['eID'],
+      //       uID: vote['uID'],
+      //       voteName: vote['voteName'].toString(),
+      //       endTime: DateTime(
+      //           endTimeInt ~/ 100000000, // 年
+      //           (endTimeInt % 100000000) ~/ 1000000, // 月
+      //           (endTimeInt % 1000000) ~/ 10000, // 日
+      //           (endTimeInt % 10000) ~/ 100, // 小时
+      //           endTimeInt % 100 // 分钟
+      //           ),
+      //       singleOrMultipleChoice: vote['isChecked'] == 1);
+      //   // Sqlite.insert(tableName: 'vote', insertData: newVoteData.toMap());
+      // }
+      print('抓取投票結果成功');
+      return [true, serverVote];
+    } else {
+      print(serverVote);
+      return [false, serverVote];
+    }
+  }
+
+  //媒合時間
+  static Future<List<dynamic>> match(
+      {required Map<String, dynamic> content, required String eID}) async {
+    String url = "http://163.22.17.145:3000/api/match/$eID";
+    final response = await http.post(
+      Uri.parse(url),
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(content),
+    );
+    if (response.statusCode == 200 || response.statusCode == 400) {
+      print('媒合時間成功');
       return [true, response];
     } else {
       print(response);

@@ -1,15 +1,21 @@
 // 活動列表頁面
 
+import 'dart:convert';
+
 import 'package:cron/cron.dart';
 import 'package:flutter/material.dart';
 import 'package:create_event2/page/event/event_editing_page.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 import '../../bottom_bar.dart';
 import '../../model/event.dart';
 import '../../provider/event_provider.dart';
+import '../../services/socket_service.dart';
 import '../../services/sqlite.dart';
+import '../chat/chat_page.dart';
+import '../chat/chatlist.dart';
 import '../login_page.dart';
 import 'event_viewing_page.dart';
 import '../chat_room_page.dart'; // 引入聊天室頁面
@@ -21,15 +27,14 @@ class EventPage extends StatefulWidget {
 }
 
 class _EventPageState extends State<EventPage> {
-  List<Event> eventlist = [];
+  List<Event> Eventlist = [];
   List<Event> notMatchTime = []; //媒合時間尚未到
   List<Event> yesMatchTime = []; //媒合時間到了 -> 就要開始媒合
 
   @override
   void initState() {
     super.initState();
-    getHomeCalendarDateEvent();
-    getGuestCalendarDateEvent();
+    getCalendarDateEvent();
     startCronJob();
   }
 
@@ -41,14 +46,6 @@ class _EventPageState extends State<EventPage> {
           title: const Text('活動列表', style: TextStyle(color: Colors.black)),
           centerTitle: true,
           backgroundColor: Color(0xFF4A7DAB), // 修改 AppBar 的背景颜色
-
-          // leading: IconButton(
-          //   // X 按鈕
-          //   icon: const Icon(Icons.close, color: Colors.black),
-          //   onPressed: () {
-          //     Navigator.pushNamed(context, '/MyBottomBar2');
-          //   },
-          // ),
           actions: [
             IconButton(
               icon: Icon(Icons.add, color: Colors.black),
@@ -96,7 +93,6 @@ class _EventPageState extends State<EventPage> {
                   itemCount: notMatchTime.length,
                   itemBuilder: (context, index) {
                     final event = notMatchTime[index];
-                    // 构建 notMatchTime 事件的 UI
                     return buildEventTile(event, context, false);
                   },
                 ),
@@ -128,6 +124,7 @@ class _EventPageState extends State<EventPage> {
 
   Widget buildEventTile(
       Event event, BuildContext context, bool isMatchTimePassed) {
+    bool isHomeEvent = event.userMall == FirebaseEmail; // 判斷是否為房主創建的活動
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Container(
@@ -138,9 +135,12 @@ class _EventPageState extends State<EventPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: ListTile(
+          leading: isHomeEvent //如果是房主創建的活動，則顯示房子圖示，否則顯示人圖示
+              ? Icon(Icons.home)
+              : Icon(Icons.group),
           title: Text(
             isMatchTimePassed
-                ? '${DateFormat('MMdd').format(event.eventBlockStartTime)} ~ ${DateFormat('MMdd').format(event.eventBlockEndTime)} ${event.eventName}'
+                ? '${DateFormat('MMdd').format(event.eventFinalStartTime)} ~ ${DateFormat('MMdd').format(event.eventFinalEndTime)} ${event.eventName}'
                 : event.eventName,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
@@ -232,10 +232,15 @@ class _EventPageState extends State<EventPage> {
                 ),
               );
             } else if (action == 'chat') {
+              SocketService.setUserName(FirebaseEmail!);
+              SocketService.setChatRoomId(event.eID.toString()); // 設定聊天室 ID
+              SocketService.connectAndListen();
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ChatRoomPage(),
+                  builder: (context) => ChatPage(
+                    event: event,
+                  ),
                 ),
               );
             }
@@ -246,7 +251,7 @@ class _EventPageState extends State<EventPage> {
               final confirmDelete = await showDialog<bool>(
                 context: context,
                 builder: (BuildContext context) => AlertDialog(
-                  title: Text('確認删除'),
+                  title: Text('確認刪除'),
                   content: Text('确定要刪除這個活動嗎？'),
                   actions: <Widget>[
                     TextButton(
@@ -260,15 +265,23 @@ class _EventPageState extends State<EventPage> {
                   ],
                 ),
               );
-
-              // 如果用户确认删除
               if (confirmDelete == true) {
-                var userMall = {'userMall': FirebaseEmail}; //到时候要改成登录的用户
-                await APIservice.deleteEvent(
-                    content: userMall, eID: event.eID.toString());
+                var userMall = {'userMall': FirebaseEmail};
+                if (isHomeEvent) {
+                  // 如果是房主，調用 deleteHomeEvent API
+                  await APIservice.deleteHomeEvent(
+                      content: userMall, eID: event.eID.toString());
+                } else {
+                  // 如果不是房主，調用 deleteGuestEvent API
+                  await APIservice.deleteGuestEvent(
+                      content: userMall,
+                      eID: event.eID.toString(),
+                      userMall: FirebaseEmail!);
+                }
 
                 setState(() {
-                  eventlist.remove(event);
+                  Eventlist.remove(event);
+
                   notMatchTime.remove(event);
                   yesMatchTime.remove(event);
                 });
@@ -286,18 +299,16 @@ class _EventPageState extends State<EventPage> {
     );
   }
 
-  //抓 "房主" 的 event 資料
-  getHomeCalendarDateEvent() async {
+  //抓 該使用者 的 event 資料
+  getCalendarDateEvent() async {
     // 從server抓使用者行事曆資料
     var userMall = {'userMall': FirebaseEmail};
-    final result = await APIservice.selectHomeEventAll(
-        content: userMall,
-        userMall: FirebaseEmail!); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
-    print(
-        '------------------------------------------------------------------------------');
-    print("該 $userMall 的資料: $result"); //，是一個陣列 [{}, {}, {}]
-    print(
-        '------------------------------------------------------------------------------');
+    final resulthome = await APIservice.selectHomeEventAll(
+        content: userMall, userMall: FirebaseEmail!);
+    dynamic resultguestData = await APIservice.selectGuestEventAll(
+        content: userMall, guestMall: FirebaseEmail!);
+    List<dynamic> resultguest = resultguestData is List ? resultguestData : [];
+
     await Sqlite.open; //開啟資料庫
     List? queryCalendarTable =
         await Sqlite.queryAll(tableName: 'event'); // 從 sqlite 拿資料
@@ -305,52 +316,17 @@ class _EventPageState extends State<EventPage> {
     DateTime now = DateTime.now(); //現在時間
 
     setState(() {
-      eventlist = queryCalendarTable!
+      Eventlist = queryCalendarTable!
           .map((e) => Event.fromMap(e))
           .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
     });
-    for (var event in eventlist) {
+    for (var event in Eventlist) {
       if (now.isAfter(event.matchTime)) {
         yesMatchTime.add(event);
       } else {
         notMatchTime.add(event);
       }
     }
-
-    return queryCalendarTable;
-  }
-
-  //抓 使用者有參與 的 event 資料
-  getGuestCalendarDateEvent() async {
-    // 從server抓使用者行事曆資料
-    var userMall = {'userMall': FirebaseEmail};
-    final result = await APIservice.selectGuestEventAll(
-        content: userMall,
-        guestMall: FirebaseEmail!); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
-    print(
-        '------------------------------------------------------------------------------');
-    print("該$userMall 參與的 event : $result"); //，是一個陣列 [{}, {}, {}]
-    print(
-        '------------------------------------------------------------------------------');
-    await Sqlite.open; //開啟資料庫
-    List? queryCalendarTable =
-        await Sqlite.queryAll(tableName: 'event'); // 從 sqlite 拿資料
-    queryCalendarTable ??= []; // 如果沒有資料，就給一個空陣列
-    DateTime now = DateTime.now(); //現在時間
-
-    setState(() {
-      eventlist = queryCalendarTable!
-          .map((e) => Event.fromMap(e))
-          .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
-    });
-    for (var event in eventlist) {
-      if (now.isAfter(event.matchTime)) {
-        yesMatchTime.add(event);
-      } else {
-        notMatchTime.add(event);
-      }
-    }
-
     return queryCalendarTable;
   }
 
@@ -363,16 +339,31 @@ class _EventPageState extends State<EventPage> {
 
   Future<void> checkMatchTime() async {
     DateTime now = DateTime.now();
-    for (var event in eventlist) {
+    for (var event in Eventlist) {
       if (now.isAtSameMomentAs(event.matchTime) ||
           (now.isAfter(event.matchTime) && !yesMatchTime.contains(event))) {
         print('${event.eventName} 的媒合時間已到達');
         // 媒合時間到了，就要開始媒合，觸發 後端 API
+        final result = await APIservice.match(
+            content: event.toMap(), eID: event.eID.toString());
+        //result[0]==false -> 沒有媒合成功 ，有多個選項，所以需要更改起始時間&結束時間，將他更改成<<需要前往投票>>
+        // print(result[0]);
+
+        http.Response response = result[1];
+        String responseBody = response.body;
+        var decoded = json.decode(responseBody);
+        var eventFinalStartTime = decoded['eventFinalStartTime'];
+        var eventFinalEndTime = decoded['eventFinalEndTime'];
+
         setState(() {
-          if (!yesMatchTime.contains(event)) {
-            yesMatchTime.add(event);
-            notMatchTime.remove(event);
-          }
+          //更新 eventFinalStartTime & eventFinalEndTime
+          event.eventFinalStartTime =
+              DateTime.parse(eventFinalStartTime.toString());
+          event.eventFinalEndTime =
+              DateTime.parse(eventFinalEndTime.toString());
+          yesMatchTime.add(event);
+          notMatchTime.remove(event);
+          Eventlist.remove(event);
         });
       }
     }

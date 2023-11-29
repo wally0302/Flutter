@@ -35,7 +35,7 @@ class JourneyEditingPage extends StatefulWidget {
 class _JourneyEditingPageState extends State<JourneyEditingPage> {
   final _formKey = GlobalKey<FormState>();
   late int jID;
-  late String uID;
+  late String userMall;
   final titleController = TextEditingController();
   late DateTime fromDate;
   late DateTime toDate;
@@ -71,7 +71,7 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
     } else {
       // 編輯
       jID = widget.journey!.jID!;
-      uID = widget.journey!.uID!;
+      userMall = widget.journey!.userMall!;
       print('編輯印出jid:$jID');
       fetchJourneyData();
     }
@@ -107,7 +107,7 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
       Map<String, dynamic> journeyData = queryResult.first;
       return Journey(
           jID: journeyData['jID'],
-          uID: journeyData['uID'],
+          userMall: journeyData['userMall'],
           journeyName: journeyData['journeyName'],
           journeyStartTime: DateTime(
               journeyData['journeyStartTime'] ~/ 100000000, // 年
@@ -146,8 +146,13 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.journey == null ? '新增行程' : '編輯行程'),
+        title: Text(widget.journey == null ? '新增行程' : '編輯行程',
+            style: TextStyle(color: Colors.black)),
+        centerTitle: true, //標題置中
+        backgroundColor: Color(0xFF4A7DAB), // 這裡設置 AppBar 的顏色
+
         leading: CloseButton(
+          color: Colors.black,
           onPressed: () {
             // 顯示提示框
             showDialogWidget();
@@ -155,27 +160,35 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
         ),
         actions: buildEditingActions(),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              buildTitle(),
-              const SizedBox(
-                height: 12,
-              ),
-              buildIsAllDaySwitch(),
-              buildDateTimePickers(),
-              buildColorPicker(context),
-              buildLocation(),
-              buildRemark(),
-              showEnableNotification(),
-              if (enableNotification)
-                buildNotificationField(
-                    text: '提醒時間 ：', onClicked: showReminderDialog),
-            ],
+      body: Container(
+        width: double.infinity, // 確保寬度填滿
+        height: double.infinity, // 確保高度填滿
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/back.png"), // 圖片路徑
+            fit: BoxFit.cover, // 確保圖片填滿容器
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                buildTitle(),
+                const SizedBox(height: 12),
+                buildIsAllDaySwitch(),
+                buildDateTimePickers(),
+                buildColorPicker(context),
+                buildLocation(),
+                buildRemark(),
+                showEnableNotification(),
+                if (enableNotification)
+                  buildNotificationField(
+                      text: '提醒時間 ：', onClicked: showReminderDialog),
+              ],
+            ),
           ),
         ),
       ),
@@ -225,8 +238,8 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
               shadowColor: Colors.transparent,
             ),
             onPressed: saveForm,
-            icon: const Icon(Icons.done),
-            label: const Text('儲存')),
+            icon: const Icon(Icons.done, color: Colors.black),
+            label: const Text('儲存', style: TextStyle(color: Colors.black))),
       ];
   // 建立標題
   Widget buildTitle() {
@@ -641,12 +654,12 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
   Future saveForm() async {
     await Sqlite.initDatabase();
     final isvalid = _formKey.currentState!.validate();
-    String uID = FirebaseEmail!;
+    String userMall = FirebaseEmail!;
 
     if (isvalid) {
       final Journey journey = Journey(
           jID: jID,
-          uID: uID,
+          userMall: userMall,
           journeyName: titleController.text,
           location: locationController.text,
           journeyStartTime: fromDate,
@@ -668,7 +681,6 @@ class _JourneyEditingPageState extends State<JourneyEditingPage> {
             updateID: jID);
         final result = await APIservice.editJourney(
             content: journey.toMap(), jID: journey.jID!);
-        print(result[0]);
 
         if (result[0]) {
           print('編輯成功');

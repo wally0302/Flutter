@@ -1,65 +1,119 @@
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter/material.dart';
+// import 'package:uuid/uuid.dart';
 
 class Vote {
-  final String id; // 新增的id属性
-  final String question;
-  final DateTime selectedDate;
-  final bool isMultipleChoice;
-  final List<String> options;
-  final List<int> optionVotes;
+  final int vID;
+  final int? eID;
+  final String? userMall;
+  final String voteName;
+  final DateTime endTime;
+  final bool singleOrMultipleChoice;
 
   // 构造函数，用于初始化对象
-  Vote({
-    required this.id, // 新增的id参数
-    required this.question,
-    required this.selectedDate,
-    required this.isMultipleChoice,
-    required this.options,
-    required this.optionVotes,
+  const Vote({
+    required this.vID,
+    required this.eID,
+    required this.userMall,
+    required this.voteName,
+    required this.endTime,
+    required this.singleOrMultipleChoice,
   });
 
-  // 你可以使用下面的工厂构造函数来创建Vote对象，并自动生成id
-  factory Vote.create({
-    required String question,
-    required DateTime selectedDate,
-    required bool isMultipleChoice,
-    required List<String> options,
-    required List<int> optionVotes,
-  }) {
-    final id = Uuid().v4(); // 使用uuid库生成一个唯一的id
+  get start => null;
+
+  factory Vote.fromMap(Map<String, dynamic> map) {
+    int endTimeInt = map['endTime'];
+
+    DateTime endTime = DateTime(
+        endTimeInt ~/ 100000000, // 年
+        (endTimeInt % 100000000) ~/ 1000000, // 月
+        (endTimeInt % 1000000) ~/ 10000, // 日
+        (endTimeInt % 10000) ~/ 100, // 小时
+        endTimeInt % 100 // 分钟
+        );
     return Vote(
-      id: id,
-      question: question,
-      selectedDate: selectedDate,
-      isMultipleChoice: isMultipleChoice,
-      options: options,
-      optionVotes: optionVotes,
+      vID: map['vID'],
+      eID: map['eID'],
+      userMall: map['userMall'],
+      voteName: map['voteName'],
+      endTime: endTime,
+      singleOrMultipleChoice: map['singleOrMultipleChoice'] == 1,
     );
   }
 
-  // 您需要根据实际情况调整下面的方法
+  Map<String, dynamic> toMap() {
+    return {
+      'vID': vID,
+      'eID': eID,
+      'userMall': userMall,
+      'voteName': voteName,
+      'endTime': endTime.year * 100000000 +
+          endTime.month * 1000000 +
+          endTime.day * 10000 +
+          endTime.hour * 100 +
+          endTime.minute, // 將 DateTime 轉換為 ISO 8601 字串
+      'singleOrMultipleChoice': singleOrMultipleChoice ? 1 : 0,
+    };
+  }
+}
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    if (other is! Vote) return false;
+class VoteOption {
+  final int oID;
+  final int? vID;
+  final List<String> votingOptionContent;
+  // final List<int> optionVotes;
 
-    return other.id == id && // 比较id属性
-        other.question == question &&
-        other.selectedDate == selectedDate &&
-        other.isMultipleChoice == isMultipleChoice &&
-        listEquals(other.options, options) &&
-        listEquals(other.optionVotes, optionVotes);
+  const VoteOption({
+    required this.oID,
+    required this.vID,
+    required this.votingOptionContent,
+    // required this.optionVotes,
+  });
+
+  get start => null;
+
+  factory VoteOption.fromMap(Map<String, dynamic> map) {
+    return VoteOption(
+      oID: map['oID'],
+      vID: map['vID'],
+      votingOptionContent: [map['votingOptionContent']],
+      // optionVotes: [map['optionVotes']],
+    );
   }
 
-  @override
-  int get hashCode {
-    return id.hashCode ^ // 包含id属性
-        question.hashCode ^
-        selectedDate.hashCode ^
-        isMultipleChoice.hashCode ^
-        options.hashCode ^
-        optionVotes.hashCode;
+  Map<String, dynamic> toMap() {
+    return {
+      'vID': vID,
+      'votingOptionContent': votingOptionContent,
+      // 'optionVotes': optionVotes,
+    };
+  }
+}
+
+class VoteResult {
+  final int voteResultID;
+  final int? vID;
+  final String? userMall;
+  final int? oID;
+  final bool status;
+
+  const VoteResult({
+    required this.voteResultID,
+    required this.vID,
+    required this.userMall,
+    required this.oID,
+    required this.status,
+  });
+
+  get start => null;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'vID': vID,
+      'userMall': userMall,
+      'oID': oID,
+      'status': status ? 1 : 0,
+    };
   }
 }

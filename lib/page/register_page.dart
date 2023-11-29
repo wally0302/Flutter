@@ -22,15 +22,10 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(
         title: Text(
           '註冊',
-          style: TextStyle(
-            fontSize: 30, // 調整字體大小
-            fontFamily: 'DFKai-SB', // 設定字體
-            fontWeight: FontWeight.w600, // 設定字體粗細
-            color: Colors.black, // 設定字體顏色
-          ),
+          style: TextStyle(color: Colors.black),
         ),
         centerTitle: true,
-        backgroundColor: Color(0xFFCFE3F4), // 設定AppBar的背景顏色
+        backgroundColor: Color(0xFF4A7DAB), // 這裡設置 AppBar 的顏色
       ),
       body: Stack(
         children: [

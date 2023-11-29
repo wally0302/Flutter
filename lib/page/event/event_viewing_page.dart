@@ -221,12 +221,11 @@ class EventViewingPage extends StatelessWidget {
     if (!show) {
       return SizedBox.shrink(); // 如果 show 為 false，則返回一個空的 SizedBox
     }
-
     return Column(
       children: [
         buildConfirmationDate(
-            '起始時間：', event.eventBlockStartTime), // 要替換為後端的媒合時間
-        buildConfirmationDate('結束時間：', event.eventBlockEndTime),
+            '起始時間：', event.eventFinalStartTime), // 要替換為後端的媒合時間
+        buildConfirmationDate('結束時間：', event.eventFinalEndTime),
       ],
     );
   }
@@ -393,26 +392,36 @@ class EventViewingPage extends StatelessWidget {
 
   List<Widget> buildViewingActions(BuildContext context, Event event) {
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
+    bool isHomeEvent = event.userMall == FirebaseEmail; // 判斷是否為房主創建的活動
 
-    return [
-      IconButton(
-        icon: Icon(Icons.edit, color: Colors.black),
-        onPressed: () {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => EventEditingPage(
-                event: event,
-                addTodayDate: true,
-                time: event.eventBlockStartTime,
+    List<Widget> actions = [];
+
+    // 如果是房主則添加編輯按鈕
+    if (isHomeEvent) {
+      actions.add(
+        IconButton(
+          icon: Icon(Icons.edit, color: Colors.black),
+          onPressed: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => EventEditingPage(
+                  event: event,
+                  addTodayDate: true,
+                  time: event.eventBlockStartTime,
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        ),
+      );
+    }
+
+    // 添加刪除按鈕
+    actions.add(
       IconButton(
         icon: Icon(Icons.delete, color: Colors.black),
         onPressed: () async {
-          // 显示确认删除的对话框
+          // 顯示確認刪除的對話框
           final confirmDelete = await showDialog<bool>(
             context: context,
             builder: (BuildContext context) => AlertDialog(
@@ -432,7 +441,7 @@ class EventViewingPage extends StatelessWidget {
           );
 
           if (confirmDelete == true) {
-            await APIservice.deleteEvent(
+            await APIservice.deleteHomeEvent(
                 content: {'userMall': FirebaseEmail},
                 eID: event.eID.toString());
 
@@ -444,7 +453,7 @@ class EventViewingPage extends StatelessWidget {
               ),
             );
 
-            // 返回到活动列表页面
+            // 返回到活動列表頁面
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/MyBottomBar2',
@@ -453,6 +462,8 @@ class EventViewingPage extends StatelessWidget {
           }
         },
       ),
-    ];
+    );
+
+    return actions;
   }
 }

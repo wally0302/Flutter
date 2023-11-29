@@ -12,7 +12,7 @@ import '../model/event.dart';
 import '../model/event_data_source.dart';
 import '../services/http.dart';
 import '../services/sqlite.dart';
-import 'drawer_page.dart';
+// import 'drawer_page.dart';
 import 'login_page.dart';
 
 // 主頁面
@@ -34,7 +34,7 @@ class _MainPageState extends State<MainPage> {
     super.initState();
     Sqlite.dropDatabase(); // 清空 sqlite 資料庫
     getCalendarDateJourney();
-    // getCalendarDateEvent();
+    getCalendarDateEvent();
   }
 
   @override
@@ -60,8 +60,8 @@ class _MainPageState extends State<MainPage> {
 
     for (final event in eventlist) {
       appointments.add(Appointment(
-        startTime: event.eventBlockStartTime,
-        endTime: event.eventBlockEndTime,
+        startTime: event.eventFinalStartTime,
+        endTime: event.eventFinalEndTime,
         subject: event.eventName,
       ));
     }
@@ -69,7 +69,7 @@ class _MainPageState extends State<MainPage> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        endDrawer: Drawer_Page(), //右側滑出選單
+        // endDrawer: Drawer_Page(), //右側滑出選單
         appBar: AppBar(
           title: const Text('行事曆', style: TextStyle(color: Colors.black)),
           centerTitle: true, //標題置中
@@ -114,17 +114,17 @@ class _MainPageState extends State<MainPage> {
   getCalendarDateJourney() async {
     // 從server抓使用者行事曆資料
 
-    var userMall = {'uID': FirebaseEmail}; //到時候要改成登入的使用者
+    var userMall = {'userMall': FirebaseEmail}; //到時候要改成登入的使用者
 
     final result = await APIservice.selectJourneyAll(
         content: userMall,
-        uID: FirebaseEmail!); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
-    print(
-        '------------------------------------------------------------------------------');
-    print("該 $FirebaseEmail 的資料: $result"); //，是一個陣列 [{}, {}, {}]
+        userMall: FirebaseEmail!); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
+    // print(
+    //     '------------------------------------------------------------------------------');
+    // print("該 $FirebaseEmail 的資料: $result"); //，是一個陣列 [{}, {}, {}]
 
-    print(
-        '------------------------------------------------------------------------------');
+    // print(
+    //     '------------------------------------------------------------------------------');
     // print(result[0]); // 是一個 {}，裡面有很多個 key:value ，{jID: 42, uID: 12345, journeyName: wally, journeyStartTime: 202308141556, journeyEndTime: 202308141756, isAllDay: 0, location: qqq, remindStatus: 1, remindTime: 0, remark: qqq, color: 4278190080}
     await Sqlite.open; //開啟資料庫
     List? queryCalendarTable =
@@ -135,10 +135,10 @@ class _MainPageState extends State<MainPage> {
           .map((e) => Journey.fromMap(e))
           .toList(); //將 queryCalendarTable 轉換成 Event 物件的 List，讓 SfCalendar 可以顯示
     });
-    for (var element in queryCalendarTable) {
-      print('-----element-----');
-      print(element);
-    }
+    // for (var element in queryCalendarTable) {
+    //   print('-----element-----');
+    //   print(element);
+    // }
     // --------------------------------------
 
     // print('-----evenTest-----');
@@ -154,12 +154,15 @@ class _MainPageState extends State<MainPage> {
   getCalendarDateEvent() async {
     // 從server抓使用者行事曆資料
     var userMall = {'userMall': FirebaseEmail}; //到時候要改成登入的使用者
-    final result = await APIservice.selectHomeEventAll(
+    final resulthome = await APIservice.selectHomeEventAll(
         content: userMall,
         userMall: FirebaseEmail!); // 從 server 抓使用者行事曆資料，就會把資料存入 sqlite
+    dynamic resultguestData = await APIservice.selectGuestEventAll(
+        content: userMall, guestMall: FirebaseEmail!);
+
     print(
         '------------------------------------------------------------------------------');
-    print("該 $userMall 的資料: $result"); //，是一個陣列 [{}, {}, {}]
+    print("該 $userMall 的資料: $resulthome"); //，是一個陣列 [{}, {}, {}]
     print(
         '------------------------------------------------------------------------------');
     // print(result[

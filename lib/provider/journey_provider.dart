@@ -33,11 +33,6 @@ class JourneyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // void addJourney(Journey journey) {
-  //   _journeys.add(journey);
-  //   notifyListeners(); //當 _journeys 列表發生變化時，它會通知所有的聽眾，以便更新與之相關的 UI 元素。
-  // }
-
   void deleteJourney(Journey journey) {
     _journeys.remove(journey);
     notifyListeners();

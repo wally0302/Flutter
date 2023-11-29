@@ -51,40 +51,51 @@ class _JourneyViewingPageState extends State<JourneyViewingPage> {
     return Scaffold(
       appBar: AppBar(
         leading: CloseButton(
-          onPressed: () {
-            Navigator.of(context).pop(_currentJourney);
-          },
-        ),
+            onPressed: () {
+              Navigator.of(context).pop(_currentJourney);
+            },
+            color: Colors.black),
         actions: buildViewingActions(context, _currentJourney),
+        backgroundColor: Color(0xFF4A7DAB), // 這裡設置 AppBar 的顏色
       ),
-      body: ListView(
-        padding: EdgeInsets.all(32),
-        children: <Widget>[
-          Text(
-            _currentJourney.journeyName,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/back.png"),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: ListView(
+          padding: EdgeInsets.all(32),
+          children: <Widget>[
+            Text(
+              _currentJourney.journeyName,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: Colors.black, // 確保文字顏色在背景上可見
+              ),
             ),
-          ),
-          SizedBox(
-            height: 24,
-          ),
-          buildDateTime(_currentJourney),
-          const SizedBox(
-            height: 24,
-          ),
-          buildLocation(_currentJourney),
-          const SizedBox(
-            height: 24,
-          ),
-          buildRemark(_currentJourney),
-          const SizedBox(
-            height: 24,
-          ),
-          buildNotification(_currentJourney, _currentJourney.remindTime)
-        ],
+            SizedBox(
+              height: 24,
+            ),
+            buildDateTime(_currentJourney),
+            const SizedBox(
+              height: 24,
+            ),
+            buildLocation(_currentJourney), // 確保此方法中的圖標顏色為黑色
+            const SizedBox(
+              height: 24,
+            ),
+            buildRemark(_currentJourney), // 確保此方法中的圖標顏色為黑色
+            const SizedBox(
+              height: 24,
+            ),
+            buildNotification(
+                _currentJourney, _currentJourney.remindTime) // 確保此方法中的圖標顏色為黑色
+          ],
+        ),
       ),
     );
   }
@@ -95,7 +106,7 @@ class _JourneyViewingPageState extends State<JourneyViewingPage> {
       children: [
         //整天 or 非整天
         buildDate(
-            journey.isAllDay ? '全天起始日期：' : '起始時1間：', journey.journeyStartTime),
+            journey.isAllDay ? '全天起始日期：' : '起始時間：', journey.journeyStartTime),
         buildDate(
             journey.isAllDay ? '全天結束日期：' : '結束時間：', journey.journeyEndTime),
       ],
@@ -197,7 +208,7 @@ class _JourneyViewingPageState extends State<JourneyViewingPage> {
   List<Widget> buildViewingActions(BuildContext context, Journey journey) {
     return [
       IconButton(
-        icon: Icon(Icons.edit),
+        icon: Icon(Icons.edit, color: Colors.black),
         onPressed: () async {
           final editedJourney = await Navigator.of(context).push(
             MaterialPageRoute(
@@ -220,43 +231,43 @@ class _JourneyViewingPageState extends State<JourneyViewingPage> {
         },
       ),
       IconButton(
-        icon: Icon(Icons.delete),
-        onPressed: () {
-          Get.defaultDialog(
-            title: "提示",
-            titleStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            middleText: "是否刪除此行程?",
-            middleTextStyle: TextStyle(fontSize: 18),
-            backgroundColor: Colors.pinkAccent,
-            radius: 30,
-            textCancel: "取消",
-            cancelTextColor: Colors.white,
-            textConfirm: "確認",
-            confirmTextColor: Colors.white,
-            buttonColor: Colors.blueGrey,
-            onCancel: () {
-              Navigator.of(context).pop();
-            },
-            onConfirm: () async {
-              final List result = await APIservice.deleteJourney(
-                  content: _currentJourney.toMap(), jID: _currentJourney.jID!);
-              print(result[0]);
-              if (result[0]) {
-                var result = await Sqlite.deleteJourney(
-                  tableName: 'journey',
-                  tableIdName: 'jid',
-                  deleteId: _currentJourney.jID ?? 0,
-                );
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/MyBottomBar2',
-                  ModalRoute.withName('/'),
-                );
-              } else {
-                print('在server刪除行程失敗');
-              }
-            },
+        icon: Icon(Icons.delete, color: Colors.black), // 設置刪除按鈕的圖示
+        onPressed: () async {
+          final confirmDelete = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+              title: Text('確認刪除'),
+              content: Text('确定要刪除這個行程嗎？'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text('確定'),
+                ),
+              ],
+            ),
           );
+          if (confirmDelete == true) {
+            final List result = await APIservice.deleteJourney(
+                content: _currentJourney.toMap(), jID: _currentJourney.jID!);
+            if (result[0]) {
+              await Sqlite.deleteJourney(
+                tableName: 'journey',
+                tableIdName: 'jid',
+                deleteId: _currentJourney.jID ?? 0,
+              );
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/MyBottomBar2',
+                ModalRoute.withName('/'),
+              );
+            } else {
+              print('在server刪除行程失敗');
+            }
+          }
         },
       ),
     ];

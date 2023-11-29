@@ -1,80 +1,112 @@
-import 'package:create_event2/model/vote.dart'; // 请根据实际路径修改
-import 'package:create_event2/page/vote/vote_result.dart';
+import 'package:create_event2/model/vote.dart'; // 引入投票模型
+import 'package:create_event2/page/vote/vote_result.dart'; // 引入投票結果頁面
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import '../../provider/vote_provider.dart';
+
+import '../../provider/vote_provider.dart'; // 引入投票提供者
+import '../../services/http.dart'; // 引入HTTP服務
 
 class SingleVote extends StatefulWidget {
-  final Vote vote;
+  final Vote vote; // 投票對象
 
-  SingleVote({required this.vote});
+  const SingleVote({
+    Key? key,
+    required this.vote,
+  }) : super(key: key);
 
   @override
   _SingleVoteState createState() => _SingleVoteState();
 }
 
 class _SingleVoteState extends State<SingleVote> {
-  int selectedOptionIndex = -1;
-  late List<int> optionVotes;
+  int selectedOptionIndex = -1; // 選中的選項索引
+  late List<dynamic> _voteOptions = [];
 
   @override
   void initState() {
     super.initState();
-    optionVotes =
-        List.from(widget.vote.optionVotes); // 使用widget.vote.optionVotes的初始值
+    getOption(); // 抓回選項內容
+    getallResult(); // 抓回投票結果
   }
 
-// 在vote函数中更新Vote对象
-  void vote(int optionIndex) {
-    final voteProvider = Provider.of<VoteProvider>(context, listen: false);
+  // 抓回選項內容
+  getOption() async {
+    print("-------------getOption-----------------");
+    print(widget.vote.vID);
 
-    setState(() {
-      if (selectedOptionIndex != -1 && selectedOptionIndex != optionIndex)
-        optionVotes[selectedOptionIndex]--;
+    final result = await APIservice.seletallVoteOptions(vID: widget.vote.vID);
+    if (result[0]) {
+      setState(() {
+        _voteOptions = result[1].map((map) => VoteOption.fromMap(map)).toList();
+      });
+      print('voteOptions');
+      print(_voteOptions);
+    } else {
+      print('$result 在 server 抓取投票選項失敗');
+    }
+  }
 
-      if (selectedOptionIndex == optionIndex) {
-        selectedOptionIndex = -1;
+  // 抓回投票結果
+  getallResult() async {
+    print("------------getallResult------------------");
+    print(widget.vote.vID);
+    // 調用 APIservice 的方法獲取投票結果
+    final result = await APIservice.seletallVoteResult(
+        vID: widget.vote.vID, userMall: '1112'); // userMall要更改
+    print('伺服器返回的結果: $result');
+    // 確保結果不為空且格式正確
+    if (result != null && result.isNotEmpty) {
+      if (result is List &&
+          result.length == 2 &&
+          result[1] is List &&
+          result[1].isNotEmpty &&
+          result[1][0] is Map) {
+        int statusIsTrue_s_OID_s_Index = -1;
+        // 遍歷投票結果，查找 'status' 為 1 的選項
+        for (int i = 0; i < result[1].length; i++) {
+          if (result[1][i]['status'] == 1) {
+            statusIsTrue_s_OID_s_Index = i;
+          }
+        }
+        print(statusIsTrue_s_OID_s_Index);
+        // 獲取伺服器返回的第一個選項的 oID
+        int oIDFromServer = result[1][0]['oID'];
+        print(result);
+        // 如果有選項 'status' 為 1，則更新 selectedOptionIndex
+        if (statusIsTrue_s_OID_s_Index != -1) {
+          setState(() {
+            for (int i = 0; i < _voteOptions.length; i++) {
+              // 查找投票選項中與伺服器返回的選項相符的索引
+              if (_voteOptions[i].oID ==
+                  result[1][statusIsTrue_s_OID_s_Index]['oID']) {
+                selectedOptionIndex = i;
+              }
+            }
+            print('抓投票結果成功: $selectedOptionIndex');
+          });
+        }
       } else {
-        selectedOptionIndex = optionIndex;
-        optionVotes[optionIndex]++;
+        // 顯示未投票的提示，並將 selectedOptionIndex 設置為一個無效值
+        setState(() {
+          selectedOptionIndex = -1;
+        });
+        print('未投票');
       }
-
-      // 创建一个新的Vote对象来更新当前的投票状态
-      final updatedVote = Vote(
-        id: widget.vote.id,
-        question: widget.vote.question,
-        selectedDate: widget.vote.selectedDate,
-        isMultipleChoice: widget.vote.isMultipleChoice,
-        options: widget.vote.options,
-        optionVotes: optionVotes,
-      );
-
-      // 使用Provider来更新Vote对象
-      voteProvider.updateVote(updatedVote, widget.vote);
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.vote.options.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('投票'),
-        ),
-        body: Center(child: Text('没有可用的投票选项')),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('投票結果', style: TextStyle(color: Colors.black)),
-        centerTitle: true, //標題置中
-        backgroundColor: Color(0xFF4A7DAB), // 這裡設置 AppBar 的顏色
-        iconTheme: IconThemeData(color: Colors.black), // 將返回箭头设为黑色
+        title: const Text('投票', style: TextStyle(color: Colors.black)),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF4A7DAB),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Stack(
         children: [
-          // Background Image
           Positioned.fill(
             child: Image.asset(
               'assets/images/back.png',
@@ -85,61 +117,104 @@ class _SingleVoteState extends State<SingleVote> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Text(
-                  widget.vote.question,
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                  widget.vote.voteName,
+                  style: const TextStyle(
+                      fontSize: 30, fontWeight: FontWeight.bold),
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: widget.vote.options.length,
-                  itemBuilder: (context, index) {
-                    return RadioListTile(
-                      title: Text(
-                        '${widget.vote.options[index]} (${optionVotes[index]})',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      value: index,
-                      groupValue: selectedOptionIndex,
-                      onChanged: (int? value) {
-                        if (value != null) vote(value);
-                      },
-                    );
-                  },
-                ),
+              ListView.builder(
+                shrinkWrap: true,
+                itemCount: _voteOptions.length,
+                itemBuilder: (context, index) {
+                  String optionText =
+                      _voteOptions[index].votingOptionContent.join(", ");
+
+                  return RadioListTile(
+                    title: Text(
+                      optionText,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    value: index,
+                    groupValue: selectedOptionIndex,
+                    onChanged: (int? value) {
+                      setState(() {
+                        selectedOptionIndex = value!;
+                      });
+                    },
+                  );
+                },
               ),
               Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    primary: Color(0xFFCFE3F4), // 设置按钮的背景颜色
+                    primary: const Color(0xFFCFE3F4),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30), // 设置按钮的圆角
+                      borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: Text(
-                    "投票", // 修改按钮文本为 "投票"
+                  child: const Text(
+                    "投票",
                     style: TextStyle(
-                      color: Colors.black, // 设置文本颜色
-                      fontSize: 15, // 设置字体大小
-                      fontFamily: 'DFKai-SB', // 设置字体
-                      fontWeight: FontWeight.w600, // 设置字体粗细
+                      color: Colors.black,
+                      fontSize: 15,
+                      fontFamily: 'DFKai-SB',
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  onPressed: () {
-                    if (selectedOptionIndex != -1) {
-                      // 进行额外的投票逻辑处理，例如更新数据库等。
+                  onPressed: () async {
+                    if (selectedOptionIndex == -1) {
+                      print('請選擇一個選項');
+                      return;
                     }
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => VoteResult(
-                          originalVote: widget.vote,
-                        ),
-                      ),
-                    );
+                    String tmpUserMail = '1112'; //這裡要更改為使用者的userMall
+                    print(widget.vote.vID);
+                    final tmpResult = await APIservice.seletallVoteResult(
+                        vID: widget.vote.vID, userMall: tmpUserMail);
+
+                    Map<String, dynamic> content;
+                    print(_voteOptions);
+                    // 遍歷所有投票選項，準備更新結果
+                    for (int i = 0; i < _voteOptions.length; i++) {
+                      // 根據選中的選項更新投票結果內容
+                      if (tmpResult[1][i]["oID"] ==
+                          _voteOptions[selectedOptionIndex].oID) {
+                        content = {
+                          'vID': widget.vote.vID,
+                          'oID': tmpResult[1][i]["oID"],
+                          'userMall': tmpUserMail,
+                          'status': 1, // 選中的選項設置為已投票
+                        };
+                      } else {
+                        content = {
+                          'vID': widget.vote.vID,
+                          'oID': tmpResult[1][i]["oID"],
+                          'userMall': tmpUserMail,
+                          'status': 0, // 未選中的選項設置為未投票
+                        };
+                      }
+                      // 更新投票結果
+                      final result = await APIservice.updateResult(
+                          content: content,
+                          voteResultID: tmpResult[1][i]["voteResultID"]);
+                      int tmpOid = tmpResult[1][i]["oID"];
+                      if (result[0]) {
+                        print('更改$tmpOid結果成功');
+                      } else {
+                        print('更改$tmpOid結果失敗');
+                      }
+                    }
+                    // 跳轉頁面到投票結果
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => VoteResultPage(
+                                  voteName: widget.vote.voteName,
+                                  vID: widget.vote.vID,
+                                )));
                   },
                 ),
               ),

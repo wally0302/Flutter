@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Journey {
   final int? jID;
-  final String? uID;
+  final String? userMall;
   final String journeyName;
   final DateTime journeyStartTime;
   final DateTime journeyEndTime;
@@ -15,7 +15,7 @@ class Journey {
 
   const Journey({
     this.jID,
-    this.uID,
+    this.userMall,
     required this.journeyName,
     required this.journeyStartTime,
     required this.journeyEndTime,
@@ -49,7 +49,7 @@ class Journey {
         );
     return Journey(
       jID: map['jID'],
-      uID: map['uID'],
+      userMall: map['userMall'],
       journeyName: map['journeyName'],
       journeyStartTime: journeyStartTime,
       journeyEndTime: journeyEndTime,
@@ -67,7 +67,7 @@ class Journey {
     return {
       'jID': jID,
       'journeyName': journeyName,
-      'uID': uID,
+      'userMall': userMall,
       'journeyStartTime': journeyStartTime.year * 100000000 +
           journeyStartTime.month * 1000000 +
           journeyStartTime.day * 10000 +

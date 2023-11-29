@@ -209,11 +209,11 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           SizedBox(height: 4),
           Text(
-            '起始時間：${Utils.toDateTime(event.eventBlockStartTime)}',
+            '起始時間：${Utils.toDateTime(event.eventFinalStartTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Text(
-            '結束時間：${Utils.toDateTime(event.eventBlockEndTime)}',
+            '結束時間：${Utils.toDateTime(event.eventFinalEndTime)}',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],
